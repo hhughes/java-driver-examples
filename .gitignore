@@ -1,0 +1,7 @@
+# ignore compiled output
+target/
+
+# ignore intellij files
+*.iml
+*.ipr
+*.iws
