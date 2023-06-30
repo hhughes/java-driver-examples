@@ -8,13 +8,12 @@ Prequesites:
 
 Build:
 
-    mvn compile
+    mvn clean package
 
 Run:
 
     mvn exec:java \
-      -Dexec.mainClass=com.datastax.astra.driver.examples.CreateMoviesTable \
-      -Dexec.args='--astraSecureConnectBundle=/path/to/secure-connect-astra.zip \
-        --astraToken=AstraCS:... \
-        --keyspace=...'
+      -Dargs.astraSecureConnectBundle=/path/to/secure-connect-astra.zip \
+      -Dargs.astraToken=AstraCS:... \
+      -Dargs.keyspace=...
       
