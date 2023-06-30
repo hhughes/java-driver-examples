@@ -15,6 +15,8 @@
     <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
     <datastax.java-driver.version>4.16.0</datastax.java-driver.version>
     <commons-cli.version>1.5.0</commons-cli.version>
+    <logback.version>1.2.3</logback.version>
+    <main.class>com.datastax.astra.driver.examples.CreateMoviesTable</main.class>
   </properties>
 
   <dependencies>
@@ -48,6 +50,12 @@
       <version>${commons-cli.version}</version>
       <scope>compile</scope>
     </dependency>
+    <dependency>
+      <groupId>ch.qos.logback</groupId>
+      <artifactId>logback-classic</artifactId>
+      <version>${logback.version}</version>
+      <scope>compile</scope>
+    </dependency>
   </dependencies>
 
   <build>
@@ -62,6 +70,27 @@
         <plugin>
           <artifactId>maven-resources-plugin</artifactId>
           <version>3.0.2</version>
+        </plugin>
+        <plugin>
+          <groupId>org.codehaus.mojo</groupId>
+          <artifactId>exec-maven-plugin</artifactId>
+          <version>3.0.0</version>
+          <executions>
+            <execution>
+              <id>java</id>
+              <goals>
+                <goal>java</goal>
+              </goals>
+            </execution>
+          </executions>
+          <configuration>
+            <mainClass>${main.class}</mainClass>
+            <arguments>
+              <argument>--astraSecureConnectBundle=${args.astraSecureConnectBundle}</argument>
+              <argument>--astraToken=${args.astraToken}</argument>
+              <argument>--keyspace=${args.keyspace}</argument>
+            </arguments>
+          </configuration>
         </plugin>
         <plugin>
           <groupId>org.apache.maven.plugins</groupId>
