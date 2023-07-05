@@ -16,7 +16,7 @@
     <datastax.java-driver.version>4.16.0</datastax.java-driver.version>
     <commons-cli.version>1.5.0</commons-cli.version>
     <logback.version>1.2.3</logback.version>
-    <main.class>com.datastax.astra.driver.examples.CreateMoviesTable</main.class>
+    <main.class>com.datastax.astra.driver.examples.AstraSingleRegion</main.class>
   </properties>
 
   <dependencies>

@@ -26,35 +26,45 @@ public class ConnectionOptions {
             .argName("KEYSPACE")
             .desc("Keyspace to use with this sample app. Note this may add or modify data already in this keyspace.")
             .hasArg().required().build();
+    private static Option FALLBACK_ASTRA_SECURE_CONNECT_BUNDLE_OPTION = Option.builder()
+            .longOpt("fallbackAstraSecureConnectBundle")
+            .argName("PATH")
+            .desc("Path to Astra Secure Connect Bundle for the fallback region you are connecting to. Downloaded from the Astra dashboard.")
+            .hasArg().build();
+
     private static Options OPTIONS = new Options()
             .addOption(ASTRA_SECURE_CONNECT_BUNDLE_OPTION)
             .addOption(ASTRA_TOKEN_OPTION)
-            .addOption(KEYSPACE_OPTION);
+            .addOption(KEYSPACE_OPTION)
+            .addOption(FALLBACK_ASTRA_SECURE_CONNECT_BUNDLE_OPTION);
 
-    public static Optional<ConnectionOptions> fromArgs(final String appName, final String[] args) {
+    public static Optional<ConnectionOptions> fromArgs(final Class mainClass, final String[] args) {
         final CommandLine commandLine;
         try {
             commandLine = new DefaultParser().parse(OPTIONS, args);
         } catch (ParseException e) {
             System.out.println(e.getMessage());
-            new HelpFormatter().printHelp(String.format("%s <CQL_QUERY>", appName), OPTIONS, true);
+            new HelpFormatter().printHelp(mainClass.getSimpleName(), OPTIONS, true);
             return Optional.empty();
         }
 
         return Optional.of(new ConnectionOptions(
                 commandLine.getOptionValue(ASTRA_SECURE_CONNECT_BUNDLE_OPTION),
                 commandLine.getOptionValue(ASTRA_TOKEN_OPTION),
-                commandLine.getOptionValue(KEYSPACE_OPTION)));
+                commandLine.getOptionValue(KEYSPACE_OPTION),
+                commandLine.getOptionValue(FALLBACK_ASTRA_SECURE_CONNECT_BUNDLE_OPTION)));
     }
 
     private final String astraSecureConnectBundle;
     private final String astraToken;
     private final String keyspace;
+    private final String fallbackAstraSecureConnectBundle;
 
-    private ConnectionOptions(final String astraSecureConnectBundle, final String astraToken, final String keyspace) {
+    private ConnectionOptions(final String astraSecureConnectBundle, final String astraToken, final String keyspace, String fallbackAstraSecureConnectBundle) {
         this.astraSecureConnectBundle = astraSecureConnectBundle;
         this.astraToken = astraToken;
         this.keyspace = keyspace;
+        this.fallbackAstraSecureConnectBundle = fallbackAstraSecureConnectBundle;
     }
 
     public String getAstraSecureConnectBundle() {
@@ -63,11 +73,19 @@ public class ConnectionOptions {
     public String getAstraToken() {
         return this.astraToken;
     }
+
     public boolean hasKeyspace() {
         return this.keyspace != null;
     }
-
     public String getKeyspace() {
         return this.keyspace;
+    }
+
+
+    public boolean hasFallbackAstraSecureConnectBundle() {
+        return this.fallbackAstraSecureConnectBundle != null;
+    }
+    public String getFallbackAstraSecureConnectBundle() {
+        return this.fallbackAstraSecureConnectBundle;
     }
 }
