@@ -11,3 +11,6 @@ target/
 
 # Ignore Gradle build output directory
 build
+
+# ignore staged secure connect bundle
+secure-connect-bundle.zip

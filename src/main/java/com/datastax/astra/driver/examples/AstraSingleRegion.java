@@ -11,37 +11,32 @@ import org.slf4j.LoggerFactory;
 
 import java.nio.file.Paths;
 
+/**
+ * Sample app that connects to AstraDB using a Secure Connect Bundle, creates then populates a table.
+ */
 public class AstraSingleRegion {
 
     private static final Logger LOG = LoggerFactory.getLogger(AstraSingleRegion.class);
 
-    /**
-     * Sample app that connects to AstraDB using a Secure Connect Bundle, creates then populates a table.
-     */
+    // Entry point, parse args and call run
     public static void main(String[] args) {
-        ConnectionOptions.fromArgs(AstraSingleRegion.class, args).ifPresent(options -> {
-            final String keyspace = options.getKeyspace();
-
-            DriverConfigLoader config = DriverConfigLoader.fromClasspath("astra.conf");
-            CqlSessionBuilder sessionBuilder = CqlSession.builder()
-                    .withCloudSecureConnectBundle(Paths.get(options.getAstraSecureConnectBundle()))
-                    .withAuthCredentials("token", options.getAstraToken())
-                    .withKeyspace(keyspace);
-
-            LOG.debug("Creating connection using '{}'", options.getAstraSecureConnectBundle());
-            LOG.debug("Using keyspace '{}'", keyspace);
-            try (CqlSession cqlSession = connect(sessionBuilder, config)) {
-                Operations.runDemo(cqlSession);
-            }
-        });
+        ConnectionOptions.fromArgs(AstraSingleRegion.class, args).ifPresent(AstraSingleRegion::run);
     }
 
-    private static CqlSession connect(CqlSessionBuilder sessionBuilder, DriverConfigLoader config) {
-        try {
-            return sessionBuilder.withConfigLoader(config).build();
-        } catch (AllNodesFailedException e) {
-            LOG.warn("Failed to create session.", e);
-            throw e;
+    // Populate AstraDB using the provided connection options
+    public static void run(ConnectionOptions options) {
+        final String keyspace = options.getKeyspace();
+
+        DriverConfigLoader config = DriverConfigLoader.fromClasspath("astra.conf");
+        CqlSessionBuilder sessionBuilder = CqlSession.builder()
+                .withCloudSecureConnectBundle(Paths.get(options.getAstraSecureConnectBundle()))
+                .withAuthCredentials("token", options.getAstraToken())
+                .withKeyspace(keyspace);
+
+        LOG.debug("Creating connection using '{}'", options.getAstraSecureConnectBundle());
+        LOG.debug("Using keyspace '{}'", keyspace);
+        try (CqlSession cqlSession = Operations.connect(sessionBuilder, config)) {
+            Operations.runDemo(cqlSession);
         }
     }
 }

@@ -105,6 +105,14 @@
         <plugin>
           <artifactId>maven-surefire-plugin</artifactId>
           <version>2.22.1</version>
+          <configuration>
+            <systemPropertyVariables>
+              <args.astraSecureConnectBundle>${args.astraSecureConnectBundle}</args.astraSecureConnectBundle>
+              <args.astraToken>${args.astraToken}</args.astraToken>
+              <args.keyspace>${args.keyspace}</args.keyspace>
+              <args.fallbackAstraSecureConnectBundle>${args.fallbackAstraSecureConnectBundle}</args.fallbackAstraSecureConnectBundle>
+            </systemPropertyVariables>
+          </configuration>
         </plugin>
         <plugin>
           <artifactId>maven-jar-plugin</artifactId>

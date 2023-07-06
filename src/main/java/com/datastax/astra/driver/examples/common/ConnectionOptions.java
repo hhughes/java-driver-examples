@@ -60,7 +60,7 @@ public class ConnectionOptions {
     private final String keyspace;
     private final String fallbackAstraSecureConnectBundle;
 
-    private ConnectionOptions(final String astraSecureConnectBundle, final String astraToken, final String keyspace, String fallbackAstraSecureConnectBundle) {
+    public ConnectionOptions(final String astraSecureConnectBundle, final String astraToken, final String keyspace, String fallbackAstraSecureConnectBundle) {
         this.astraSecureConnectBundle = astraSecureConnectBundle;
         this.astraToken = astraToken;
         this.keyspace = keyspace;
