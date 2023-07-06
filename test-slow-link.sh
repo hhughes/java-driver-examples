@@ -20,5 +20,5 @@ docker build --no-cache -t java-driver-examples:1 -f ./Dockerfile .
 #docker run -it --cap-add NET_ADMIN java-driver-examples:1 /bin/sh
 #docker run -it --rm java-driver-examples:1 mvn test -Dargs.astraSecureConnectBundle="/secure-connect-bundle.zip" -Dargs.astraToken="${AT}" -Dargs.keyspace="${KEYSPACE}"
 docker run -it --cap-add NET_ADMIN --rm java-driver-examples:1 /bin/bash -c "mvn test ${MVN_ARGS} \
-  && tc qdisc add dev eth0 root netem delay 5000ms 3500ms \
+  && tc qdisc add dev eth0 root netem delay 5000ms 3000ms \
   && mvn --offline test ${MVN_ARGS}"

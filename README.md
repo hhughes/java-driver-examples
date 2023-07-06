@@ -17,3 +17,8 @@ Run:
       -Dargs.astraToken=AstraCS:... \
       -Dargs.keyspace=...
       
+Simulate slow connections:
+
+> Additional requirement: `docker`
+
+    ./test-slow-link.sh "/path/to/secure-connect-astra.zip" "AstraCS:.." "<keyspace>"
