@@ -16,7 +16,8 @@
     <datastax.java-driver.version>4.16.0</datastax.java-driver.version>
     <commons-cli.version>1.5.0</commons-cli.version>
     <logback.version>1.2.3</logback.version>
-    <main.class>com.datastax.astra.driver.examples.AstraSingleRegion</main.class>
+    <single-region.main.class>com.datastax.astra.driver.examples.AstraSingleRegion</single-region.main.class>
+    <multi-region.main.class>com.datastax.astra.driver.examples.AstraMultiRegion</multi-region.main.class>
   </properties>
 
   <dependencies>
@@ -77,20 +78,35 @@
           <version>3.0.0</version>
           <executions>
             <execution>
-              <id>java</id>
+              <id>single-region</id>
               <goals>
                 <goal>java</goal>
               </goals>
+              <configuration>
+                <mainClass>${single-region.main.class}</mainClass>
+                <arguments>
+                  <argument>--astraSecureConnectBundle=${args.astraSecureConnectBundle}</argument>
+                  <argument>--astraToken=${args.astraToken}</argument>
+                  <argument>--keyspace=${args.keyspace}</argument>
+                </arguments>
+              </configuration>
+            </execution>
+            <execution>
+              <id>multi-region</id>
+              <goals>
+                <goal>java</goal>
+              </goals>
+              <configuration>
+                <mainClass>${multi-region.main.class}</mainClass>
+                <arguments>
+                  <argument>--astraSecureConnectBundle=${args.astraSecureConnectBundle}</argument>
+                  <argument>--fallbackAstraSecureConnectBundle=${args.fallbackAstraSecureConnectBundle}</argument>
+                  <argument>--astraToken=${args.astraToken}</argument>
+                  <argument>--keyspace=${args.keyspace}</argument>
+                </arguments>
+              </configuration>
             </execution>
           </executions>
-          <configuration>
-            <mainClass>${main.class}</mainClass>
-            <arguments>
-              <argument>--astraSecureConnectBundle=${args.astraSecureConnectBundle}</argument>
-              <argument>--astraToken=${args.astraToken}</argument>
-              <argument>--keyspace=${args.keyspace}</argument>
-            </arguments>
-          </configuration>
         </plugin>
         <plugin>
           <groupId>org.apache.maven.plugins</groupId>

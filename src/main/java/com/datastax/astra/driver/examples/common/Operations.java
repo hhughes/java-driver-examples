@@ -11,6 +11,7 @@ import com.datastax.oss.driver.api.core.cql.Row;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import java.nio.file.Paths;
 import java.util.Arrays;
 import java.util.UUID;
 
@@ -89,15 +90,33 @@ public class Operations {
         }
     }
 
-    public static CqlSession connect(CqlSessionBuilder sessionBuilder, DriverConfigLoader config) {
+    public static CqlSession connect(CqlSessionBuilder sessionBuilder, DriverConfigLoader primaryScbConfig) {
         // Create the database connection session, retry connection failure an unlimited number of times
         // In a real application there should be a limit to the number of retries
         while (true) {
             try {
-                return sessionBuilder.withConfigLoader(config).build();
+                return sessionBuilder.withConfigLoader(primaryScbConfig).build();
             } catch (AllNodesFailedException e) {
                 // session creation failed, probably due to time-out, catch error and retry
                 LOG.warn("Failed to create session.", e);
+            }
+        }
+    }
+
+    public static CqlSession connect(CqlSessionBuilder sessionBuilder, String primaryScb, String fallbackScb, DriverConfigLoader staticConfig) {
+        // Create the database connection session, retry connection failure an unlimited number of times
+        // In a real application there should be a limit to the number of retries
+        while (true) {
+            try {
+                return sessionBuilder
+                        .withCloudSecureConnectBundle(Paths.get(primaryScb))
+                        .withConfigLoader(staticConfig).build();
+            } catch (AllNodesFailedException | IllegalStateException e) {
+                // session creation failed, probably due to time-out, catch error and retry
+                LOG.warn("Failed to create session.", e);
+                return sessionBuilder
+                        .withCloudSecureConnectBundle(Paths.get(fallbackScb))
+                        .withConfigLoader(staticConfig).build();
             }
         }
     }
