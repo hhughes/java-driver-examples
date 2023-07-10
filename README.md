@@ -29,3 +29,10 @@ Run Graal native image:
         -Dargs.astraSecureConnectBundle="/path/to/secure-connect-astra.zip" \
         -Dargs.astraToken="AstraCS:..." \
         -Dargs.keyspace="..."
+
+To update Graal META-INF/native-image configuration:
+
+    mvn exec:exec@java-agent \
+        -Dargs.astraSecureConnectBundle="/path/to/secure-connect-astra.zip" \
+        -Dargs.astraToken="AstraCS:..." \
+        -Dargs.keyspace="..."

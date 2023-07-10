@@ -14,7 +14,7 @@
   <properties>
     <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
 
-    <datastax.java-driver.version>4.16.0</datastax.java-driver.version>
+    <datastax.java-driver.version>4.16.1-SNAPSHOT</datastax.java-driver.version>
     <commons-cli.version>1.5.0</commons-cli.version>
     <logback.version>1.2.3</logback.version>
     <native.maven.plugin.version>0.9.12</native.maven.plugin.version>
@@ -66,6 +66,12 @@
       <scope>compile</scope>
     </dependency>
 
+    <dependency>
+      <groupId>org.lz4</groupId>
+      <artifactId>lz4-java</artifactId>
+      <version>1.4.1</version>
+    </dependency>
+
   </dependencies>
 
   <build>
@@ -108,9 +114,8 @@
               </goals>
               <configuration>
                 <executable>java</executable>
-                <workingDirectory>${project.build.directory}</workingDirectory>
                 <arguments>
-                  <!--<argument>-agentlib:native-image-agent=config-output-dir=./META-INF/native-image</argument>-->
+                  <argument>-agentlib:native-image-agent=config-output-dir=src/main/resources/META-INF/native-image</argument>
                   <argument>-classpath</argument>
                   <classpath/>
                   <argument>${main.class}</argument>
@@ -249,7 +254,6 @@
               <fallback>false</fallback>
               <buildArgs>
                 <arg>-H:DashboardDump=java-driver-examples -H:+DashboardAll</arg>
-                <arg>--initialize-at-build-time=com.datastax.oss.driver.internal.core.util.Dependency</arg>
                 <arg>--initialize-at-run-time=ch.qos.logback.core.ConsoleAppender</arg>
                 <arg>--enable-url-protocols=https</arg>
                 <arg>-H:IncludeResources=logback.xml</arg>

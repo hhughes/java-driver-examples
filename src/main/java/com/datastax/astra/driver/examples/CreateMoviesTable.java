@@ -33,7 +33,8 @@ public class CreateMoviesTable {
                     .withLong(DefaultDriverOption.REQUEST_PAGE_SIZE, 5000)
                     .withDuration(DefaultDriverOption.CONNECTION_INIT_QUERY_TIMEOUT, Duration.ofSeconds(10L))
                     .withDuration(DefaultDriverOption.CONNECTION_SET_KEYSPACE_TIMEOUT, Duration.ofSeconds(10L))
-                    .withDuration(DefaultDriverOption.CONTROL_CONNECTION_TIMEOUT, Duration.ofSeconds(10L));
+                    .withDuration(DefaultDriverOption.CONTROL_CONNECTION_TIMEOUT, Duration.ofSeconds(10L))
+                    .withString(DefaultDriverOption.PROTOCOL_COMPRESSION, "lz4");
             CqlSessionBuilder sessionBuilder = CqlSession.builder()
                     .withCloudSecureConnectBundle(Paths.get(options.getAstraSecureConnectBundle()))
                     .withAuthCredentials("token", options.getAstraToken())
