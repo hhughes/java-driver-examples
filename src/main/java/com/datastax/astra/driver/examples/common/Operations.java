@@ -5,87 +5,122 @@ import com.datastax.oss.driver.api.core.CqlSession;
 import com.datastax.oss.driver.api.core.CqlSessionBuilder;
 import com.datastax.oss.driver.api.core.DriverTimeoutException;
 import com.datastax.oss.driver.api.core.config.DriverConfigLoader;
+import com.datastax.oss.driver.api.core.connection.ClosedConnectionException;
 import com.datastax.oss.driver.api.core.cql.BoundStatementBuilder;
+import com.datastax.oss.driver.api.core.cql.PreparedStatement;
 import com.datastax.oss.driver.api.core.cql.ResultSet;
-import com.datastax.oss.driver.api.core.cql.Row;
+import com.datastax.oss.driver.api.core.cql.SimpleStatement;
+import com.datastax.oss.driver.api.core.cql.Statement;
+import com.datastax.oss.driver.api.core.servererrors.ReadTimeoutException;
+import com.datastax.oss.driver.api.core.servererrors.WriteTimeoutException;
+import org.apache.commons.lang3.RandomStringUtils;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import java.nio.file.Paths;
-import java.util.Arrays;
+import java.time.Instant;
+import java.util.LinkedList;
+import java.util.Random;
 import java.util.UUID;
 
 public class Operations {
     private static final Logger LOG = LoggerFactory.getLogger(Operations.class);
 
-    private static String buildCreateTableCql(String tableName) {
+    private static Statement buildCreateTableCql(String tableName) {
         // Idempotent create table
-        return String.format("CREATE TABLE IF NOT EXISTS %s (id uuid PRIMARY KEY, title text, year int)", tableName);
+        return SimpleStatement.newInstance(String.format("CREATE TABLE IF NOT EXISTS %s (id uuid PRIMARY KEY, created_at timestamp, string text, number int)", tableName));
     }
 
-    private static String buildDropTableCql(String tableName) {
+    private static Statement buildDropTableCql(String tableName) {
         // Idempotent drop table
-        return String.format("DROP TABLE IF EXISTS %s", tableName);
+        return SimpleStatement.newInstance(String.format("DROP TABLE IF EXISTS %s", tableName));
     }
 
-    private static String buildInsertMovieCql(String tableName, MovieEntry movie) {
-        return String.format("INSERT INTO %s (id, title, year) VALUES (%s, '%s', %s)", tableName, movie.id, movie.title, movie.year);
-    }
-
-    private static String buildSelectAllCql(String tableName) {
-        // Select specific columns, define limit for number of results
-        return String.format("SELECT id, title, year FROM %s LIMIT 100", tableName);
-    }
-
-    private static class MovieEntry {
+    private static class Entry {
         final UUID id;
-        final String title;
-        final int year;
+        final String string;
+        final int number;
 
-        public MovieEntry(String title, int year) {
+        public Entry(String string, int number) {
             this.id = UUID.randomUUID();
-            this.title = title;
-            this.year = year;
+            this.string = string;
+            this.number = number;
+        }
+
+        @Override
+        public String toString() {
+            return "Entry{" +
+                    "id=" + id +
+                    ", string='" + string + '\'' +
+                    ", number=" + number +
+                    '}';
         }
     }
 
-    public static void runDemo(CqlSession session) {
-        // Create new table to hold movie data (exit if it does)
-        final String tableName = String.format("movies_%s", UUID.randomUUID().toString().replaceAll("-", "_"));
+    public static void runDemo(CqlSession session, long iterations) {
+        LOG.debug("Running demo with {} iterations", iterations);
+
+        // Create new table to hold demo data (exit if it does)
+        final String tableName = String.format("demo_%s", UUID.randomUUID().toString().replaceAll("-", "_"));
+
+        Random r = new Random();
 
         try {
             LOG.debug("Creating table '{}'", tableName);
             runWithRetries(session, buildCreateTableCql(tableName));
 
-            for (MovieEntry movie : Arrays.asList(
-                    new MovieEntry("The Shawshank Redemption", 1994),
-                    new MovieEntry("The Godfather", 1972),
-                    new MovieEntry("The Dark Knight", 2008))) {
-                LOG.debug("Adding record ({}, {}, {}) to '{}'", movie.id, movie.title, movie.year, tableName);
-                runWithRetries(session, buildInsertMovieCql(tableName, movie));
-            }
+            PreparedStatement preparedWrite = session.prepare(SimpleStatement.newInstance(String.format("INSERT INTO %s (id, created_at, string, number) VALUES (?, ?, ?, ?)", tableName)));
+            PreparedStatement preparedReadEntry = session.prepare(SimpleStatement.newInstance(String.format("SELECT created_at, string, number FROM %s WHERE id IN (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)", tableName)));
 
-            LOG.debug("Listing all records in '{}'", tableName);
-            for (Row row : runWithRetries(session, buildSelectAllCql(tableName))) {
-                LOG.debug("Received record ({}, {}, {})", row.getUuid("id"), row.getString("title"), row.getInt("year"));
+            LinkedList<UUID> ids = new LinkedList<>();
+
+            int i=0;
+            // intentional !=  check so that setting iterations < 0 will loop forever
+            while (i != iterations) {
+                // create new entry with random field values using prepared write statement
+                Entry entry = new Entry(RandomStringUtils.randomAlphabetic(10), Math.abs(r.nextInt() % 9999));
+                LOG.debug("Run {}: Inserting new entry {}", i++, entry);
+                runWithRetries(session, preparedWrite.bind(entry.id, Instant.now(), entry.string, entry.number));
+
+                // accumulate new entry id and remove oldest if neccessary
+                ids.add(entry.id);
+                if (ids.size() > 10) {
+                    ids.removeFirst();
+                } else {
+                    // cannot use prepare query until we have 10 items available
+                    continue;
+                }
+
+                // read rows fetched using prepared read statement
+                BoundStatementBuilder boundStatementBuilder = preparedReadEntry.boundStatementBuilder();
+                for (int pos=0; pos<ids.size(); pos++) {
+                    boundStatementBuilder = boundStatementBuilder.setUuid(pos, ids.get(pos));
+                }
+
+                runWithRetries(session, boundStatementBuilder.build())
+                        .forEach(row -> LOG.debug("Received record ({}, {}, {})", row.getInstant("created_at"), row.getString("string"), row.getInt("number")));
             }
         } finally {
             // Attempt to clean up the table
             LOG.debug("Removing table '{}'", tableName);
-            runWithRetries(session, buildDropTableCql(tableName));
+            try {
+                runWithRetries(session, buildDropTableCql(tableName));
+            } catch (Exception e) {
+                LOG.error("failed to clean up table", e);
+            }
             LOG.debug("Closing connection");
         }
     }
 
-    public static ResultSet runWithRetries(CqlSession session, String query) {
+    public static ResultSet runWithRetries(CqlSession session, Statement query) {
         // Queries will be retried indefinitely on timeout, they must be idempotent
         // In a real application there should be a limit to the number of retries
         while (true) {
             try {
                 return session.execute(query);
-            } catch (DriverTimeoutException e) {
+            } catch (DriverTimeoutException | WriteTimeoutException | ReadTimeoutException | ClosedConnectionException e) {
                 // request timed-out, catch error and retry
-                LOG.warn(String.format("Timeout executing query '%s', retrying", query), e);
+                LOG.warn(String.format("Error '%s' executing query '%s', retrying", e.getMessage(), query), e);
             }
         }
     }
@@ -96,7 +131,7 @@ public class Operations {
         while (true) {
             try {
                 return sessionBuilder.withConfigLoader(primaryScbConfig).build();
-            } catch (AllNodesFailedException e) {
+            } catch (AllNodesFailedException | IllegalStateException e) {
                 // session creation failed, probably due to time-out, catch error and retry
                 LOG.warn("Failed to create session.", e);
             }

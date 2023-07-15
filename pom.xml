@@ -15,6 +15,7 @@
     <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
     <datastax.java-driver.version>4.16.0</datastax.java-driver.version>
     <commons-cli.version>1.5.0</commons-cli.version>
+    <commons-lang3.version>3.12.0</commons-lang3.version>
     <logback.version>1.2.3</logback.version>
     <single-region.main.class>com.datastax.astra.driver.examples.AstraSingleRegion</single-region.main.class>
     <multi-region.main.class>com.datastax.astra.driver.examples.AstraMultiRegion</multi-region.main.class>
@@ -49,6 +50,12 @@
       <groupId>commons-cli</groupId>
       <artifactId>commons-cli</artifactId>
       <version>${commons-cli.version}</version>
+      <scope>compile</scope>
+    </dependency>
+    <dependency>
+      <groupId>org.apache.commons</groupId>
+      <artifactId>commons-lang3</artifactId>
+      <version>${commons-lang3.version}</version>
       <scope>compile</scope>
     </dependency>
     <dependency>
@@ -88,6 +95,7 @@
                   <argument>--astraSecureConnectBundle=${args.astraSecureConnectBundle}</argument>
                   <argument>--astraToken=${args.astraToken}</argument>
                   <argument>--keyspace=${args.keyspace}</argument>
+                  <argument>--iterations=${args.iterations}</argument>
                 </arguments>
               </configuration>
             </execution>
@@ -103,6 +111,7 @@
                   <argument>--fallbackAstraSecureConnectBundle=${args.fallbackAstraSecureConnectBundle}</argument>
                   <argument>--astraToken=${args.astraToken}</argument>
                   <argument>--keyspace=${args.keyspace}</argument>
+                  <argument>--iterations=${args.iterations}</argument>
                 </arguments>
               </configuration>
             </execution>
@@ -127,6 +136,7 @@
               <args.astraToken>${args.astraToken}</args.astraToken>
               <args.keyspace>${args.keyspace}</args.keyspace>
               <args.fallbackAstraSecureConnectBundle>${args.fallbackAstraSecureConnectBundle}</args.fallbackAstraSecureConnectBundle>
+              <args.iterations>${args.iterations}</args.iterations>
             </systemPropertyVariables>
           </configuration>
         </plugin>

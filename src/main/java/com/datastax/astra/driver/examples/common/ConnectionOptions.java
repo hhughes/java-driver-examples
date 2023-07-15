@@ -31,12 +31,18 @@ public class ConnectionOptions {
             .argName("PATH")
             .desc("Path to Astra Secure Connect Bundle for the fallback region you are connecting to. Downloaded from the Astra dashboard.")
             .hasArg().build();
+    private static Option ITERATIONS_OPTION = Option.builder()
+            .longOpt("iterations")
+            .argName("N")
+            .desc("Number of demo-loop iterations to perform (default=100)")
+            .hasArg().build();
 
     private static Options OPTIONS = new Options()
             .addOption(ASTRA_SECURE_CONNECT_BUNDLE_OPTION)
             .addOption(ASTRA_TOKEN_OPTION)
             .addOption(KEYSPACE_OPTION)
-            .addOption(FALLBACK_ASTRA_SECURE_CONNECT_BUNDLE_OPTION);
+            .addOption(FALLBACK_ASTRA_SECURE_CONNECT_BUNDLE_OPTION)
+            .addOption(ITERATIONS_OPTION);
 
     public static Optional<ConnectionOptions> fromArgs(final Class mainClass, final String[] args) {
         final CommandLine commandLine;
@@ -52,19 +58,22 @@ public class ConnectionOptions {
                 commandLine.getOptionValue(ASTRA_SECURE_CONNECT_BUNDLE_OPTION),
                 commandLine.getOptionValue(ASTRA_TOKEN_OPTION),
                 commandLine.getOptionValue(KEYSPACE_OPTION),
-                commandLine.getOptionValue(FALLBACK_ASTRA_SECURE_CONNECT_BUNDLE_OPTION)));
+                commandLine.getOptionValue(FALLBACK_ASTRA_SECURE_CONNECT_BUNDLE_OPTION),
+                commandLine.getOptionValue(ITERATIONS_OPTION)));
     }
 
     private final String astraSecureConnectBundle;
     private final String astraToken;
     private final String keyspace;
     private final String fallbackAstraSecureConnectBundle;
+    private final long iterations;
 
-    public ConnectionOptions(final String astraSecureConnectBundle, final String astraToken, final String keyspace, String fallbackAstraSecureConnectBundle) {
+    public ConnectionOptions(final String astraSecureConnectBundle, final String astraToken, final String keyspace, String fallbackAstraSecureConnectBundle, String iterations) {
         this.astraSecureConnectBundle = astraSecureConnectBundle;
         this.astraToken = astraToken;
         this.keyspace = keyspace;
         this.fallbackAstraSecureConnectBundle = fallbackAstraSecureConnectBundle;
+        this.iterations = iterations != null && !iterations.isEmpty() ? Long.parseLong(iterations) : 100L;
     }
 
     public String getAstraSecureConnectBundle() {
@@ -81,11 +90,14 @@ public class ConnectionOptions {
         return this.keyspace;
     }
 
-
     public boolean hasFallbackAstraSecureConnectBundle() {
         return this.fallbackAstraSecureConnectBundle != null;
     }
     public String getFallbackAstraSecureConnectBundle() {
         return this.fallbackAstraSecureConnectBundle;
+    }
+
+    public long getIterations() {
+        return this.iterations;
     }
 }

@@ -2,7 +2,6 @@ package com.datastax.astra.driver.examples;
 
 import com.datastax.astra.driver.examples.common.ConnectionOptions;
 import com.datastax.astra.driver.examples.common.Operations;
-import com.datastax.oss.driver.api.core.AllNodesFailedException;
 import com.datastax.oss.driver.api.core.CqlSession;
 import com.datastax.oss.driver.api.core.CqlSessionBuilder;
 import com.datastax.oss.driver.api.core.config.DriverConfigLoader;
@@ -36,7 +35,7 @@ public class AstraSingleRegion {
         LOG.debug("Creating connection using '{}'", options.getAstraSecureConnectBundle());
         LOG.debug("Using keyspace '{}'", keyspace);
         try (CqlSession cqlSession = Operations.connect(sessionBuilder, config)) {
-            Operations.runDemo(cqlSession);
+            Operations.runDemo(cqlSession, options.getIterations());
         }
     }
 }

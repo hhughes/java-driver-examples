@@ -55,10 +55,16 @@ public class AstraMultiRegion {
                 LOG.error("no session connected");
                 throw new RuntimeException("no session connected");
             }
-            Operations.runDemo(cqlSession);
+            // TODO: handle region-fallback after initial connection
+            Operations.runDemo(cqlSession, options.getIterations());
         }
     }
 
+    /**
+     * Class wrapping primary and fallback CqlSession definitions.
+     * If connection cannot be established to primary, seamlessly try fallback.
+     * Note: fallback only occurs at initialization, ideally this would also happen any time primary was closed.
+     */
     public static class PrimarySessionWithFallback implements CqlSession {
 
         private CqlSession primary;
@@ -87,6 +93,7 @@ public class AstraMultiRegion {
                 }));
         }
 
+        // use carefully - not thread-safe
         public CqlSession get() {
             return primary != null ? primary : fallback;
         }
