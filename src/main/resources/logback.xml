@@ -1,14 +1,85 @@
 <configuration>
-
-    <appender name="STDOUT" class="ch.qos.logback.core.ConsoleAppender">
+    <property name="pattern" value="%d{HH:mm:ss.SSS} [%thread] %-5level %logger{36} - %msg%n" />
+    <appender name="FILE" class="ch.qos.logback.core.rolling.RollingFileAppender">
+        <file>${USER_HOME}/application.log</file>
+        <rollingPolicy class="ch.qos.logback.core.rolling.SizeAndTimeBasedRollingPolicy">
+            <fileNamePattern>${USER_HOME}/application-%d{yyyy-MM-dd}.%i.log.gz</fileNamePattern>
+            <maxFileSize>20MB</maxFileSize>
+            <maxHistory>200</maxHistory>
+            <totalSizeCap>20GB</totalSizeCap>
+        </rollingPolicy>
         <encoder>
-            <pattern>%d{HH:mm:ss.SSS} [%thread] %-5level %logger{36} - %msg%n</pattern>
+            <pattern>${pattern}</pattern>
         </encoder>
     </appender>
 
-    <root level="info">
+    <appender name="STDOUT" class="ch.qos.logback.core.ConsoleAppender">
+        <target>System.out</target>
+        <filter class="ch.qos.logback.classic.filter.ThresholdFilter">
+            <level>INFO</level>
+        </filter>
+        <encoder>
+            <pattern>${pattern}</pattern>
+        </encoder>
+    </appender>
+
+    <appender name="STDOUT-DEBUG" class="ch.qos.logback.core.ConsoleAppender">
+        <target>System.out</target>
+        <encoder>
+            <pattern>${pattern}</pattern>
+        </encoder>
+    </appender>
+
+    <root level="trace">
+        <appender-ref ref="FILE" />
         <appender-ref ref="STDOUT" />
     </root>
-    <logger name="com.datastax.astra.driver.examples.AstraSingleRegion" level="debug"/>
-    <logger name="com.datastax.astra.driver.examples.common.Operations" level="debug"/>
+    <logger name="com.datastax.oss.driver.internal.core.control.ControlConnection" level="trace">
+        <appender-ref ref="STDOUT-DEBUG" />
+    </logger>
+    <logger name="com.datastax.oss.driver.internal.core.metadata.RemoveNodeRefresh" level="trace">
+        <appender-ref ref="STDOUT-DEBUG" />
+    </logger>
+    <logger name="com.datastax.oss.driver.internal.core.context.EventBus" level="trace">
+        <appender-ref ref="STDOUT-DEBUG" />
+    </logger>
+    <logger name="com.datastax.oss.driver.internal.core.session.PoolManager" level="trace">
+        <appender-ref ref="STDOUT-DEBUG" />
+    </logger>
+    <logger name="com.datastax.oss.driver.internal.core.pool.ChannelPool" level="trace">
+        <appender-ref ref="STDOUT-DEBUG" />
+    </logger>
+    <logger name="com.datastax.oss.driver.internal.core.metadata.DefaultTopologyMonitor" level="trace">
+        <appender-ref ref="STDOUT-DEBUG" />
+    </logger>
+    <logger name="com.datastax.oss.driver.internal.core.util.concurrent.Reconnection" level="trace">
+        <appender-ref ref="STDOUT-DEBUG" />
+    </logger>
+    <logger name="com.datastax.oss.driver.internal.core.metadata.MetadataManager" level="trace">
+        <appender-ref ref="STDOUT-DEBUG" />
+    </logger>
+    <logger name="com.datastax.oss.driver.internal.core.metadata.NodeStateManager" level="trace">
+        <appender-ref ref="STDOUT-DEBUG" />
+    </logger>
+    <logger name="com.datastax.oss.driver.internal.core.metadata.FullNodeListRefresh" level="trace">
+        <appender-ref ref="STDOUT-DEBUG" />
+    </logger>
+    <logger name="com.datastax.oss.driver.internal.core.metadata.InitialNodeListRefresh" level="trace">
+        <appender-ref ref="STDOUT-DEBUG" />
+    </logger>
+    <logger name="com.datastax.oss.driver.internal.core.metadata.AddNodeRefresh" level="trace">
+        <appender-ref ref="STDOUT-DEBUG" />
+    </logger>
+    <logger name="com.datastax.oss.driver.internal.core.metadata.LoadBalancingPolicyWrapper" level="trace">
+        <appender-ref ref="STDOUT-DEBUG" />
+    </logger>
+    <logger name="com.datastax.oss.driver.internal.core.loadbalancing.BasicLoadBalancingPolicy" level="trace">
+        <appender-ref ref="STDOUT-DEBUG" />
+    </logger>
+    <logger name="com.datastax.oss.driver.internal.core.channel.ProtocolInitHandler" level="trace">
+        <appender-ref ref="STDOUT-DEBUG" />
+    </logger>
+    <logger name="com.datastax.oss.driver.internal.core.metadata.SniEndPoint" level="trace">
+        <appender-ref ref="STDOUT-DEBUG" />
+    </logger>
 </configuration>

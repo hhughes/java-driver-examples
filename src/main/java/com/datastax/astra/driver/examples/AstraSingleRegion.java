@@ -35,6 +35,9 @@ public class AstraSingleRegion {
         LOG.debug("Creating connection using '{}'", options.getAstraSecureConnectBundle());
         LOG.debug("Using keyspace '{}'", keyspace);
         try (CqlSession cqlSession = Operations.connect(sessionBuilder, config)) {
+            if (options.getIterations() == 0) {
+                return;
+            }
             Operations.runDemo(cqlSession, options.getIterations());
         }
     }

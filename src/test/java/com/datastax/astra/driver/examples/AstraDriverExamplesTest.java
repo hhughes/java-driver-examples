@@ -4,6 +4,8 @@ import com.datastax.astra.driver.examples.common.ConnectionOptions;
 import org.junit.Assume;
 import org.junit.Test;
 
+import java.util.Optional;
+
 /**
  * Unit test for simple App.
  */
@@ -20,7 +22,8 @@ public class AstraDriverExamplesTest {
         String astraSecureConnectBundle = assumeProperty("args.astraSecureConnectBundle");
         String astraToken = assumeProperty("args.astraToken");
         String keyspace = assumeProperty("args.keyspace");
+        String iterations = Optional.ofNullable(System.getProperty("args.iterations")).orElse("100");
 
-        AstraSingleRegion.run(new ConnectionOptions(astraSecureConnectBundle, astraToken, keyspace, null, "100"));
+        AstraSingleRegion.run(new ConnectionOptions(astraSecureConnectBundle, astraToken, keyspace, null, iterations));
     }
 }
