@@ -13,7 +13,7 @@
 
   <properties>
     <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
-    <datastax.java-driver.version>4.17.0</datastax.java-driver.version>
+    <datastax.java-driver.version>4.17.1-SNAPSHOT</datastax.java-driver.version>
     <commons-cli.version>1.5.0</commons-cli.version>
     <commons-lang3.version>3.12.0</commons-lang3.version>
     <logback.version>1.2.3</logback.version>
