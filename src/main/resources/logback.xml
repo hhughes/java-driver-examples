@@ -6,9 +6,10 @@
         </encoder>
     </appender>
 
-    <root level="info">
+    <root level="trace">
         <appender-ref ref="STDOUT" />
     </root>
     <logger name="com.datastax.astra.driver.examples.AstraSingleRegion" level="debug"/>
     <logger name="com.datastax.astra.driver.examples.common.Operations" level="debug"/>
+    <logger name="com.datastax.oss.driver.internal.core.control.ControlConnection" level="trace"/>
 </configuration>

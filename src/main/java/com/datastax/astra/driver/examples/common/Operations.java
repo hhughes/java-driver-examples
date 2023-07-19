@@ -24,6 +24,7 @@ import java.util.Random;
 import java.util.UUID;
 
 public class Operations {
+    private static final boolean USE_NEW_TABLE = false;
     private static final Logger LOG = LoggerFactory.getLogger(Operations.class);
 
     private static Statement buildCreateTableCql(String tableName) {
@@ -61,11 +62,12 @@ public class Operations {
         LOG.debug("Running demo with {} iterations", iterations);
 
         // Create new table to hold demo data (exit if it does)
-        final String tableName = String.format("demo_%s", UUID.randomUUID().toString().replaceAll("-", "_"));
+        final String tableName = USE_NEW_TABLE ? String.format("demo_%s", UUID.randomUUID().toString().replaceAll("-", "_")) : "demo_singleton";
 
         Random r = new Random();
 
         try {
+            // attempt create whether we're using new table or not
             LOG.debug("Creating table '{}'", tableName);
             runWithRetries(session, buildCreateTableCql(tableName));
 
@@ -101,13 +103,16 @@ public class Operations {
                         .forEach(row -> LOG.debug("Received record ({}, {}, {})", row.getInstant("created_at"), row.getString("string"), row.getInt("number")));
             }
         } finally {
-            // Attempt to clean up the table
-            LOG.debug("Removing table '{}'", tableName);
-            try {
-                runWithRetries(session, buildDropTableCql(tableName));
-            } catch (Exception e) {
-                LOG.error("failed to clean up table", e);
+            if (USE_NEW_TABLE) {
+                // if we are using a new table clean it up
+                LOG.debug("Removing table '{}'", tableName);
+                try {
+                    runWithRetries(session, buildDropTableCql(tableName));
+                } catch (Exception e) {
+                    LOG.error("failed to clean up table", e);
+                }
             }
+
             LOG.debug("Closing connection");
         }
     }
