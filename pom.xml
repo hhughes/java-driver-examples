@@ -13,7 +13,9 @@
 
   <properties>
     <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
-    <datastax.java-driver.version>4.17.0</datastax.java-driver.version>
+    <datastax.java-driver.groupId>com.datastax.cassandra</datastax.java-driver.groupId>
+    <datastax.java-driver.artifactId>cassandra-driver-core</datastax.java-driver.artifactId>
+    <datastax.java-driver.version>3.11.4-SNAPSHOT</datastax.java-driver.version>
     <commons-cli.version>1.5.0</commons-cli.version>
     <commons-lang3.version>3.12.0</commons-lang3.version>
     <logback.version>1.2.3</logback.version>
@@ -29,20 +31,8 @@
       <scope>test</scope>
     </dependency>
     <dependency>
-      <groupId>com.datastax.oss</groupId>
-      <artifactId>java-driver-core</artifactId>
-      <version>${datastax.java-driver.version}</version>
-      <scope>compile</scope>
-    </dependency>
-    <dependency>
-      <groupId>com.datastax.oss</groupId>
-      <artifactId>java-driver-query-builder</artifactId>
-      <version>${datastax.java-driver.version}</version>
-      <scope>compile</scope>
-    </dependency>
-    <dependency>
-      <groupId>com.datastax.oss</groupId>
-      <artifactId>java-driver-mapper-runtime</artifactId>
+      <groupId>${datastax.java-driver.groupId}</groupId>
+      <artifactId>${datastax.java-driver.artifactId}</artifactId>
       <version>${datastax.java-driver.version}</version>
       <scope>compile</scope>
     </dependency>

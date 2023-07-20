@@ -1,20 +1,15 @@
 package com.datastax.astra.driver.examples.common;
 
-import com.datastax.oss.driver.api.core.AllNodesFailedException;
-import com.datastax.oss.driver.api.core.CqlSession;
-import com.datastax.oss.driver.api.core.CqlSessionBuilder;
-import com.datastax.oss.driver.api.core.DriverTimeoutException;
-import com.datastax.oss.driver.api.core.config.DriverConfigLoader;
-import com.datastax.oss.driver.api.core.connection.ClosedConnectionException;
-import com.datastax.oss.driver.api.core.cql.BoundStatement;
-import com.datastax.oss.driver.api.core.cql.BoundStatementBuilder;
-import com.datastax.oss.driver.api.core.cql.PreparedStatement;
-import com.datastax.oss.driver.api.core.cql.ResultSet;
-import com.datastax.oss.driver.api.core.cql.SimpleStatement;
-import com.datastax.oss.driver.api.core.cql.Statement;
-import com.datastax.oss.driver.api.core.servererrors.ReadTimeoutException;
-import com.datastax.oss.driver.api.core.servererrors.WriteTimeoutException;
-import com.datastax.oss.driver.api.core.type.codec.ExtraTypeCodecs;
+import com.datastax.driver.core.BoundStatement;
+import com.datastax.driver.core.Cluster;
+import com.datastax.driver.core.PreparedStatement;
+import com.datastax.driver.core.ResultSet;
+import com.datastax.driver.core.Session;
+import com.datastax.driver.core.SimpleStatement;
+import com.datastax.driver.core.Statement;
+import com.datastax.driver.core.exceptions.ConnectionException;
+import com.datastax.driver.core.exceptions.ReadTimeoutException;
+import com.datastax.driver.core.exceptions.WriteTimeoutException;
 import org.apache.commons.lang3.RandomStringUtils;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -22,6 +17,7 @@ import org.slf4j.LoggerFactory;
 import java.nio.file.Paths;
 import java.time.Instant;
 import java.util.Arrays;
+import java.util.Date;
 import java.util.LinkedList;
 import java.util.Random;
 import java.util.UUID;
@@ -32,12 +28,12 @@ public class Operations {
 
     private static Statement buildCreateTableCql(String tableName) {
         // Idempotent create table
-        return SimpleStatement.newInstance(String.format("CREATE TABLE IF NOT EXISTS %s (id uuid PRIMARY KEY, created_at timestamp, string text, number int, weights vector<float, 3>)", tableName));
+        return new SimpleStatement(String.format("CREATE TABLE IF NOT EXISTS %s (id uuid PRIMARY KEY, created_at timestamp, string text, number int)", tableName));
     }
 
     private static Statement buildDropTableCql(String tableName) {
         // Idempotent drop table
-        return SimpleStatement.newInstance(String.format("DROP TABLE IF EXISTS %s", tableName));
+        return new SimpleStatement(String.format("DROP TABLE IF EXISTS %s", tableName));
     }
 
     private static class Entry {
@@ -64,7 +60,7 @@ public class Operations {
         }
     }
 
-    public static void runDemo(CqlSession session, long iterations) {
+    public static void runDemo(Session session, long iterations) {
         LOG.debug("Running demo with {} iterations", iterations);
 
         // Create new table to hold demo data (exit if it does)
@@ -73,12 +69,13 @@ public class Operations {
         Random r = new Random();
 
         try {
-            // attempt create whether we're using new table or not
-            LOG.debug("Creating table '{}'", tableName);
-            runWithRetries(session, buildCreateTableCql(tableName));
+            if (USE_NEW_TABLE) {
+                LOG.debug("Creating table '{}'", tableName);
+                runWithRetries(session, buildCreateTableCql(tableName));
+            }
 
-            PreparedStatement preparedWrite = session.prepare(SimpleStatement.newInstance(String.format("INSERT INTO %s (id, created_at, string, number, weights) VALUES (?, ?, ?, ?, ?)", tableName)));
-            PreparedStatement preparedReadEntry = session.prepare(SimpleStatement.newInstance(String.format("SELECT created_at, string, number, weights FROM %s WHERE id IN (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)", tableName)));
+            PreparedStatement preparedWrite = session.prepare(new SimpleStatement(String.format("INSERT INTO %s (id, created_at, string, number, weights) VALUES (?, ?, ?, ?, ?)", tableName)));
+            PreparedStatement preparedReadEntry = session.prepare(new SimpleStatement(String.format("SELECT created_at, string, number, weights FROM %s WHERE id IN (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)", tableName)));
 
             LinkedList<UUID> ids = new LinkedList<>();
 
@@ -90,13 +87,7 @@ public class Operations {
                 LOG.debug("Run {}: Inserting new entry {}", i++, entry);
 
                 // bind variables from entry
-                BoundStatement boundWrite = preparedWrite.boundStatementBuilder()
-                        .set("id", entry.id, UUID.class)
-                        .set("created_at", Instant.now(), Instant.class)
-                        .set("string", entry.string, String.class)
-                        .set("number", entry.number, Integer.class)
-                        .set("weights", entry.weights, ExtraTypeCodecs.floatVectorToArray(3))
-                        .build();
+                BoundStatement boundWrite = preparedWrite.bind(entry.id, Date.from(Instant.now()), entry.string, entry.number);
 
                 runWithRetries(session, boundWrite);
 
@@ -110,13 +101,10 @@ public class Operations {
                 }
 
                 // read rows fetched using prepared read statement
-                BoundStatementBuilder boundStatementBuilder = preparedReadEntry.boundStatementBuilder();
-                for (int pos=0; pos<ids.size(); pos++) {
-                    boundStatementBuilder = boundStatementBuilder.setUuid(pos, ids.get(pos));
-                }
+                BoundStatement boundRead = preparedReadEntry.bind(ids.toArray());
 
-                runWithRetries(session, boundStatementBuilder.build())
-                        .forEach(row -> LOG.debug("Received record ({}, {}, {})", row.getInstant("created_at"), row.getString("string"), row.getInt("number")));
+                runWithRetries(session, boundRead)
+                        .forEach(row -> LOG.debug("Received record ({}, {}, {})", row.getTimestamp("created_at"), row.getString("string"), row.getInt("number")));
             }
         } finally {
             if (USE_NEW_TABLE) {
@@ -133,46 +121,48 @@ public class Operations {
         }
     }
 
-    public static ResultSet runWithRetries(CqlSession session, Statement query) {
+    public static ResultSet runWithRetries(Session session, Statement query) {
         // Queries will be retried indefinitely on timeout, they must be idempotent
         // In a real application there should be a limit to the number of retries
         while (true) {
             try {
                 return session.execute(query);
-            } catch (DriverTimeoutException | WriteTimeoutException | ReadTimeoutException | ClosedConnectionException e) {
+            } catch (WriteTimeoutException | ReadTimeoutException | ConnectionException e) {
                 // request timed-out, catch error and retry
                 LOG.warn(String.format("Error '%s' executing query '%s', retrying", e.getMessage(), query), e);
             }
         }
     }
 
-    public static CqlSession connect(CqlSessionBuilder sessionBuilder, DriverConfigLoader primaryScbConfig) {
+    public static Session connect(Cluster.Builder builder, String keyspace) {
         // Create the database connection session, retry connection failure an unlimited number of times
         // In a real application there should be a limit to the number of retries
         while (true) {
             try {
-                return sessionBuilder.withConfigLoader(primaryScbConfig).build();
-            } catch (AllNodesFailedException | IllegalStateException e) {
+                return builder.build().connect(keyspace);
+            } catch (IllegalStateException e) {
                 // session creation failed, probably due to time-out, catch error and retry
                 LOG.warn("Failed to create session.", e);
             }
         }
     }
 
-    public static CqlSession connect(CqlSessionBuilder sessionBuilder, String primaryScb, String fallbackScb, DriverConfigLoader staticConfig) {
+    public static Session connect(Cluster.Builder builder, String primaryScb, String fallbackScb) {
         // Create the database connection session, retry connection failure an unlimited number of times
         // In a real application there should be a limit to the number of retries
         while (true) {
             try {
-                return sessionBuilder
-                        .withCloudSecureConnectBundle(Paths.get(primaryScb))
-                        .withConfigLoader(staticConfig).build();
-            } catch (AllNodesFailedException | IllegalStateException e) {
+                return builder
+                        .withCloudSecureConnectBundle(Paths.get(primaryScb).toFile())
+                        .build()
+                        .connect();
+            } catch (IllegalStateException e) {
                 // session creation failed, probably due to time-out, catch error and retry
                 LOG.warn("Failed to create session.", e);
-                return sessionBuilder
-                        .withCloudSecureConnectBundle(Paths.get(fallbackScb))
-                        .withConfigLoader(staticConfig).build();
+                return builder
+                        .withCloudSecureConnectBundle(Paths.get(fallbackScb).toFile())
+                        .build()
+                        .connect();
             }
         }
     }

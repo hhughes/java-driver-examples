@@ -2,9 +2,8 @@ package com.datastax.astra.driver.examples;
 
 import com.datastax.astra.driver.examples.common.ConnectionOptions;
 import com.datastax.astra.driver.examples.common.Operations;
-import com.datastax.oss.driver.api.core.CqlSession;
-import com.datastax.oss.driver.api.core.CqlSessionBuilder;
-import com.datastax.oss.driver.api.core.config.DriverConfigLoader;
+import com.datastax.driver.core.Cluster;
+import com.datastax.driver.core.Session;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -26,16 +25,14 @@ public class AstraSingleRegion {
     public static void run(ConnectionOptions options) {
         final String keyspace = options.getKeyspace();
 
-        DriverConfigLoader config = DriverConfigLoader.fromClasspath("astra.conf");
-        CqlSessionBuilder sessionBuilder = CqlSession.builder()
-                .withCloudSecureConnectBundle(Paths.get(options.getAstraSecureConnectBundle()))
-                .withAuthCredentials("token", options.getAstraToken())
-                .withKeyspace(keyspace);
+        Cluster.Builder builder = Cluster.builder()
+                .withCloudSecureConnectBundle(Paths.get(options.getAstraSecureConnectBundle()).toFile())
+                .withCredentials("fkFXmtZFHeRrKNefFWBIDtNR", "hB7WvpemlOB89E4bM9Dh0NJTIjF69Ixi5jsIs1A2GM-xTZdlbweqcOBMc6LaQ9ZcS7HxBLi+db7ORpuTef-_c9PNkFaY,1v0YYZ-af1pkLLKCAuK1p6Az6eeg.+LZ2jc");
 
         LOG.debug("Creating connection using '{}'", options.getAstraSecureConnectBundle());
         LOG.debug("Using keyspace '{}'", keyspace);
-        try (CqlSession cqlSession = Operations.connect(sessionBuilder, config)) {
-            Operations.runDemo(cqlSession, options.getIterations());
+        try (Session session = Operations.connect(builder, keyspace)) {
+            Operations.runDemo(session, options.getIterations());
         }
     }
 }
