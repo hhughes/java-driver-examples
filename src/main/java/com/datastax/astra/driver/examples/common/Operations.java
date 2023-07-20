@@ -6,6 +6,7 @@ import com.datastax.oss.driver.api.core.CqlSessionBuilder;
 import com.datastax.oss.driver.api.core.DriverTimeoutException;
 import com.datastax.oss.driver.api.core.config.DriverConfigLoader;
 import com.datastax.oss.driver.api.core.connection.ClosedConnectionException;
+import com.datastax.oss.driver.api.core.cql.BoundStatement;
 import com.datastax.oss.driver.api.core.cql.BoundStatementBuilder;
 import com.datastax.oss.driver.api.core.cql.PreparedStatement;
 import com.datastax.oss.driver.api.core.cql.ResultSet;
@@ -13,12 +14,14 @@ import com.datastax.oss.driver.api.core.cql.SimpleStatement;
 import com.datastax.oss.driver.api.core.cql.Statement;
 import com.datastax.oss.driver.api.core.servererrors.ReadTimeoutException;
 import com.datastax.oss.driver.api.core.servererrors.WriteTimeoutException;
+import com.datastax.oss.driver.api.core.type.codec.ExtraTypeCodecs;
 import org.apache.commons.lang3.RandomStringUtils;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import java.nio.file.Paths;
 import java.time.Instant;
+import java.util.Arrays;
 import java.util.LinkedList;
 import java.util.Random;
 import java.util.UUID;
@@ -29,7 +32,7 @@ public class Operations {
 
     private static Statement buildCreateTableCql(String tableName) {
         // Idempotent create table
-        return SimpleStatement.newInstance(String.format("CREATE TABLE IF NOT EXISTS %s (id uuid PRIMARY KEY, created_at timestamp, string text, number int)", tableName));
+        return SimpleStatement.newInstance(String.format("CREATE TABLE IF NOT EXISTS %s (id uuid PRIMARY KEY, created_at timestamp, string text, number int, weights vector<float, 3>)", tableName));
     }
 
     private static Statement buildDropTableCql(String tableName) {
@@ -41,11 +44,13 @@ public class Operations {
         final UUID id;
         final String string;
         final int number;
+        final float[] weights;
 
-        public Entry(String string, int number) {
+        public Entry(String string, int number, float[] weights) {
             this.id = UUID.randomUUID();
             this.string = string;
             this.number = number;
+            this.weights = weights;
         }
 
         @Override
@@ -54,6 +59,7 @@ public class Operations {
                     "id=" + id +
                     ", string='" + string + '\'' +
                     ", number=" + number +
+                    ", weights=" + Arrays.toString(weights) +
                     '}';
         }
     }
@@ -71,8 +77,8 @@ public class Operations {
             LOG.debug("Creating table '{}'", tableName);
             runWithRetries(session, buildCreateTableCql(tableName));
 
-            PreparedStatement preparedWrite = session.prepare(SimpleStatement.newInstance(String.format("INSERT INTO %s (id, created_at, string, number) VALUES (?, ?, ?, ?)", tableName)));
-            PreparedStatement preparedReadEntry = session.prepare(SimpleStatement.newInstance(String.format("SELECT created_at, string, number FROM %s WHERE id IN (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)", tableName)));
+            PreparedStatement preparedWrite = session.prepare(SimpleStatement.newInstance(String.format("INSERT INTO %s (id, created_at, string, number, weights) VALUES (?, ?, ?, ?, ?)", tableName)));
+            PreparedStatement preparedReadEntry = session.prepare(SimpleStatement.newInstance(String.format("SELECT created_at, string, number, weights FROM %s WHERE id IN (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)", tableName)));
 
             LinkedList<UUID> ids = new LinkedList<>();
 
@@ -80,9 +86,19 @@ public class Operations {
             // intentional !=  check so that setting iterations < 0 will loop forever
             while (i != iterations) {
                 // create new entry with random field values using prepared write statement
-                Entry entry = new Entry(RandomStringUtils.randomAlphabetic(10), Math.abs(r.nextInt() % 9999));
+                Entry entry = new Entry(RandomStringUtils.randomAlphabetic(10), Math.abs(r.nextInt() % 9999), new float[] { r.nextFloat(), r.nextFloat(), r.nextFloat() });
                 LOG.debug("Run {}: Inserting new entry {}", i++, entry);
-                runWithRetries(session, preparedWrite.bind(entry.id, Instant.now(), entry.string, entry.number));
+
+                // bind variables from entry
+                BoundStatement boundWrite = preparedWrite.boundStatementBuilder()
+                        .set("id", entry.id, UUID.class)
+                        .set("created_at", Instant.now(), Instant.class)
+                        .set("string", entry.string, String.class)
+                        .set("number", entry.number, Integer.class)
+                        .set("weights", entry.weights, ExtraTypeCodecs.floatVectorToArray(3))
+                        .build();
+
+                runWithRetries(session, boundWrite);
 
                 // accumulate new entry id and remove oldest if neccessary
                 ids.add(entry.id);
