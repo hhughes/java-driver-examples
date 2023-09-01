@@ -16,7 +16,6 @@ import org.slf4j.LoggerFactory;
 
 import java.nio.file.Paths;
 import java.time.Instant;
-import java.util.Arrays;
 import java.util.Date;
 import java.util.LinkedList;
 import java.util.Random;
@@ -129,12 +128,12 @@ public class Operations {
         }
     }
 
-    public static Session connect(Cluster.Builder builder, String keyspace) {
+    public static Session connect(Cluster cluster, String keyspace) {
         // Create the database connection session, retry connection failure an unlimited number of times
         // In a real application there should be a limit to the number of retries
         while (true) {
             try {
-                return builder.build().connect(keyspace);
+                return cluster.connect(keyspace);
             } catch (IllegalStateException e) {
                 // session creation failed, probably due to time-out, catch error and retry
                 LOG.warn("Failed to create session.", e);

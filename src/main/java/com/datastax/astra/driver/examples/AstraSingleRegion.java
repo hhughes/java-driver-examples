@@ -26,7 +26,7 @@ public class AstraSingleRegion {
     public static void run(ConnectionOptions options) {
         final String keyspace = options.getKeyspace();
 
-        Cluster.Builder sessionBuilder = Cluster.builder()
+        Cluster.Builder clusterBuilder = Cluster.builder()
                 .withCloudSecureConnectBundle(Paths.get(options.getAstraSecureConnectBundle()).toFile())
                 .withCredentials(options.getClientId(), options.getClientSecret())
                 .withQueryOptions(new QueryOptions()
@@ -35,11 +35,13 @@ public class AstraSingleRegion {
 
         LOG.debug("Creating connection using '{}' [client-id: '{}' / client-secret: '{}']", options.getAstraSecureConnectBundle(), options.getClientId(), options.getClientSecret());
         LOG.debug("Using keyspace '{}'", keyspace);
-        try (Session cqlSession = Operations.connect(sessionBuilder, keyspace)) {
-            if (options.getIterations() == 0) {
-                return;
+        try (Cluster cluster = clusterBuilder.build()) {
+            try (Session cqlSession = Operations.connect(cluster, keyspace)) {
+                if (options.getIterations() == 0) {
+                    return;
+                }
+                Operations.runDemo(cqlSession, options.getIterations());
             }
-            Operations.runDemo(cqlSession, options.getIterations());
         }
     }
 }
