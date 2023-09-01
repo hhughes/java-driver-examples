@@ -15,7 +15,7 @@
     <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
     <datastax.java-driver.groupId>com.datastax.cassandra</datastax.java-driver.groupId>
     <datastax.java-driver.artifactId>cassandra-driver-core</datastax.java-driver.artifactId>
-    <datastax.java-driver.version>3.11.4-SNAPSHOT</datastax.java-driver.version>
+    <datastax.java-driver.version>3.11.5-SNAPSHOT</datastax.java-driver.version>
     <commons-cli.version>1.5.0</commons-cli.version>
     <commons-lang3.version>3.12.0</commons-lang3.version>
     <logback.version>1.2.3</logback.version>
@@ -83,23 +83,8 @@
                 <mainClass>${single-region.main.class}</mainClass>
                 <arguments>
                   <argument>--astraSecureConnectBundle=${args.astraSecureConnectBundle}</argument>
-                  <argument>--astraToken=${args.astraToken}</argument>
-                  <argument>--keyspace=${args.keyspace}</argument>
-                  <argument>--iterations=${args.iterations}</argument>
-                </arguments>
-              </configuration>
-            </execution>
-            <execution>
-              <id>multi-region</id>
-              <goals>
-                <goal>java</goal>
-              </goals>
-              <configuration>
-                <mainClass>${multi-region.main.class}</mainClass>
-                <arguments>
-                  <argument>--astraSecureConnectBundle=${args.astraSecureConnectBundle}</argument>
-                  <argument>--fallbackAstraSecureConnectBundle=${args.fallbackAstraSecureConnectBundle}</argument>
-                  <argument>--astraToken=${args.astraToken}</argument>
+                  <argument>--clientId=${args.clientId}</argument>
+                  <argument>--clientSecret=${args.clientSecret}</argument>
                   <argument>--keyspace=${args.keyspace}</argument>
                   <argument>--iterations=${args.iterations}</argument>
                 </arguments>
@@ -123,7 +108,8 @@
           <configuration>
             <systemPropertyVariables>
               <args.astraSecureConnectBundle>${args.astraSecureConnectBundle}</args.astraSecureConnectBundle>
-              <args.astraToken>${args.astraToken}</args.astraToken>
+              <args.clientId>${args.clientId}</args.clientId>
+              <args.clientSecret>${args.clientSecret}</args.clientSecret>
               <args.keyspace>${args.keyspace}</args.keyspace>
               <args.fallbackAstraSecureConnectBundle>${args.fallbackAstraSecureConnectBundle}</args.fallbackAstraSecureConnectBundle>
               <args.iterations>${args.iterations}</args.iterations>

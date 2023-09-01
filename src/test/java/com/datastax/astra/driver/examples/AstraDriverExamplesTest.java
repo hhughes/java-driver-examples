@@ -20,10 +20,11 @@ public class AstraDriverExamplesTest {
     @Test
     public void single_region_example() {
         String astraSecureConnectBundle = assumeProperty("args.astraSecureConnectBundle");
-        String astraToken = assumeProperty("args.astraToken");
+        String clientId = assumeProperty("args.clientId");
+        String clientSecret = assumeProperty("args.clientSecret");
         String keyspace = assumeProperty("args.keyspace");
         String iterations = Optional.ofNullable(System.getProperty("args.iterations")).orElse("100");
 
-        AstraSingleRegion.run(new ConnectionOptions(astraSecureConnectBundle, astraToken, keyspace, null, iterations));
+        AstraSingleRegion.run(new ConnectionOptions(astraSecureConnectBundle, clientId, clientSecret, keyspace, null, iterations));
     }
 }

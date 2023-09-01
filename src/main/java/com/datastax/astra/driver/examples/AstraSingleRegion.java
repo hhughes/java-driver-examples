@@ -3,6 +3,7 @@ package com.datastax.astra.driver.examples;
 import com.datastax.astra.driver.examples.common.ConnectionOptions;
 import com.datastax.astra.driver.examples.common.Operations;
 import com.datastax.driver.core.Cluster;
+import com.datastax.driver.core.QueryOptions;
 import com.datastax.driver.core.Session;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -25,14 +26,20 @@ public class AstraSingleRegion {
     public static void run(ConnectionOptions options) {
         final String keyspace = options.getKeyspace();
 
-        Cluster.Builder builder = Cluster.builder()
+        Cluster.Builder sessionBuilder = Cluster.builder()
                 .withCloudSecureConnectBundle(Paths.get(options.getAstraSecureConnectBundle()).toFile())
-                .withCredentials("fkFXmtZFHeRrKNefFWBIDtNR", "hB7WvpemlOB89E4bM9Dh0NJTIjF69Ixi5jsIs1A2GM-xTZdlbweqcOBMc6LaQ9ZcS7HxBLi+db7ORpuTef-_c9PNkFaY,1v0YYZ-af1pkLLKCAuK1p6Az6eeg.+LZ2jc");
+                .withCredentials(options.getClientId(), options.getClientSecret())
+                .withQueryOptions(new QueryOptions()
+                        .setRefreshNodeIntervalMillis(100)
+                        .setRefreshNodeListIntervalMillis(100));
 
-        LOG.debug("Creating connection using '{}'", options.getAstraSecureConnectBundle());
+        LOG.debug("Creating connection using '{}' [client-id: '{}' / client-secret: '{}']", options.getAstraSecureConnectBundle(), options.getClientId(), options.getClientSecret());
         LOG.debug("Using keyspace '{}'", keyspace);
-        try (Session session = Operations.connect(builder, keyspace)) {
-            Operations.runDemo(session, options.getIterations());
+        try (Session cqlSession = Operations.connect(sessionBuilder, keyspace)) {
+            if (options.getIterations() == 0) {
+                return;
+            }
+            Operations.runDemo(cqlSession, options.getIterations());
         }
     }
 }

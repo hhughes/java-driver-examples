@@ -14,3 +14,6 @@ build
 
 # ignore staged secure connect bundle
 secure-connect-bundle.zip
+
+# ignore log output
+USER_HOME_IS_UNDEFINED
