@@ -6,6 +6,7 @@ import com.datastax.oss.driver.api.core.CqlSessionBuilder;
 import com.datastax.oss.driver.api.core.DriverTimeoutException;
 import com.datastax.oss.driver.api.core.config.DriverConfigLoader;
 import com.datastax.oss.driver.api.core.connection.ClosedConnectionException;
+import com.datastax.oss.driver.api.core.connection.HeartbeatException;
 import com.datastax.oss.driver.api.core.cql.BoundStatementBuilder;
 import com.datastax.oss.driver.api.core.cql.ExecutionInfo;
 import com.datastax.oss.driver.api.core.cql.PreparedStatement;
@@ -133,7 +134,8 @@ public class Operations {
                     requestCounts.computeIfAbsent(node, n -> new AtomicInteger()).incrementAndGet();
                 }
                 return resultSet;
-            } catch (DriverTimeoutException | WriteTimeoutException | ReadTimeoutException | ClosedConnectionException e) {
+            } catch (DriverTimeoutException | WriteTimeoutException | ReadTimeoutException | ClosedConnectionException |
+                     HeartbeatException e) {
                 // request timed-out, catch error and retry
                 LOG.warn(String.format("Error '%s' executing query '%s', retrying", e.getMessage(), query), e);
             } catch (AllNodesFailedException e) {

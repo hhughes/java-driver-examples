@@ -42,7 +42,7 @@
     <logger name="com.datastax.oss.driver.internal.core.metadata.RemoveNodeRefresh" level="trace">
         <appender-ref ref="STDOUT-DEBUG" />
     </logger>
-    <logger name="com.datastax.oss.driver.internal.core.context.EventBus" level="info">
+    <logger name="com.datastax.oss.driver.internal.core.context.EventBus" level="trace">
         <appender-ref ref="STDOUT-DEBUG" />
     </logger>
     <logger name="com.datastax.oss.driver.internal.core.session.PoolManager" level="trace">

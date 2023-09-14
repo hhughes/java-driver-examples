@@ -11,6 +11,7 @@ import org.apache.commons.lang3.reflect.FieldUtils;
 
 import java.beans.ConstructorProperties;
 import java.io.Serializable;
+import java.net.InetSocketAddress;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
@@ -63,29 +64,31 @@ public class ConnectionsNode implements Serializable {
                 node.getBroadcastRpcAddress().map(Objects::toString).orElse("null"),
                 openConnections(node, context),
                 node.getState(),
-                controlConnectionString(node, context),
+                controlConnectionString(node, context).orElse("false"),
                 context.getLoadBalancingPolicyWrapper().newQueryPlan().stream().anyMatch(n -> n.equals(node)),
                 requestCounts.getOrDefault(node, ZERO).get());
     }
 
-    private static String controlConnectionString(Node node, InternalDriverContext context) {
+    private static Optional<String> controlConnectionString(Node node, InternalDriverContext context) {
         return Stream.of(context.getControlConnection())
                 .map(ControlConnection::channel)
                 .filter(driverChannel -> node.getEndPoint().equals(driverChannel.getEndPoint()))
                 .map(Connections::getChannel)
-                .map(Connections::getChannelId)
-                .findAny().orElse("false");
+                .map(channel -> String.format("%s#%s", channel.id(), channel.remoteAddress()))
+                .findAny();
     }
 
     private static List<String> openConnections(Node node, InternalDriverContext context) {
         ChannelPool channelPool = context.getPoolManager().getPools().get(node);
         try {
             List<String> connections = new ArrayList<>();
+            controlConnectionString(node, context).ifPresent(connections::add);
             Object channelSet = FieldUtils.readField(channelPool, "channels", true);
-            return Stream.of((DriverChannel[]) FieldUtils.readField(channelSet, "channels", true))
+            Stream.of((DriverChannel[]) FieldUtils.readField(channelSet, "channels", true))
                     .map(Connections::getChannel)
-                    .map(Connections::getChannelId)
-                    .collect(Collectors.toList());
+                    .map(channel -> String.format("%s#%s", channel.id(), channel.remoteAddress()))
+                    .forEach(connections::add);
+            return connections;
         } catch (IllegalAccessException e) {
             throw new RuntimeException(e);
         }
