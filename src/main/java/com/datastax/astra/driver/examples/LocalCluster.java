@@ -7,6 +7,7 @@ import com.datastax.oss.driver.api.core.CqlSessionBuilder;
 import com.datastax.oss.driver.api.core.config.DriverConfigLoader;
 
 import java.net.InetSocketAddress;
+import java.util.concurrent.ConcurrentHashMap;
 
 public class LocalCluster {
 
@@ -22,7 +23,7 @@ public class LocalCluster {
                 .addContactPoint(InetSocketAddress.createUnresolved("127.0.0.1", 9043))
                 .addContactPoint(InetSocketAddress.createUnresolved("127.0.0.1", 9045));
         try (CqlSession cqlSession = Operations.connect(sessionBuilder, config)) {
-            Operations.runDemo(cqlSession, options.getIterations());
+            Operations.runDemo(cqlSession, options.getIterations(), new ConcurrentHashMap<>());
         }
     }
 

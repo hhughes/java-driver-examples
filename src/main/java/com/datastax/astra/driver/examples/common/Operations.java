@@ -7,10 +7,12 @@ import com.datastax.oss.driver.api.core.DriverTimeoutException;
 import com.datastax.oss.driver.api.core.config.DriverConfigLoader;
 import com.datastax.oss.driver.api.core.connection.ClosedConnectionException;
 import com.datastax.oss.driver.api.core.cql.BoundStatementBuilder;
+import com.datastax.oss.driver.api.core.cql.ExecutionInfo;
 import com.datastax.oss.driver.api.core.cql.PreparedStatement;
 import com.datastax.oss.driver.api.core.cql.ResultSet;
 import com.datastax.oss.driver.api.core.cql.SimpleStatement;
 import com.datastax.oss.driver.api.core.cql.Statement;
+import com.datastax.oss.driver.api.core.metadata.Node;
 import com.datastax.oss.driver.api.core.servererrors.ReadTimeoutException;
 import com.datastax.oss.driver.api.core.servererrors.WriteTimeoutException;
 import org.apache.commons.lang3.RandomStringUtils;
@@ -20,8 +22,10 @@ import org.slf4j.LoggerFactory;
 import java.nio.file.Paths;
 import java.time.Instant;
 import java.util.LinkedList;
+import java.util.Map;
 import java.util.Random;
 import java.util.UUID;
+import java.util.concurrent.atomic.AtomicInteger;
 
 public class Operations {
     private static final boolean USE_NEW_TABLE = false;
@@ -58,7 +62,7 @@ public class Operations {
         }
     }
 
-    public static void runDemo(CqlSession session, long iterations) {
+    public static void runDemo(CqlSession session, long iterations, Map<Node, AtomicInteger> requestCounts) {
         LOG.debug("Running demo with {} iterations", iterations);
 
         // Create new table to hold demo data (exit if it does)
@@ -69,7 +73,7 @@ public class Operations {
         try {
             // attempt create whether we're using new table or not
             LOG.debug("Creating table '{}'", tableName);
-            runWithRetries(session, buildCreateTableCql(tableName));
+            runWithRetries(session, buildCreateTableCql(tableName), requestCounts);
 
             PreparedStatement preparedWrite = session.prepare(SimpleStatement.newInstance(String.format("INSERT INTO %s (id, created_at, string, number) VALUES (?, ?, ?, ?)", tableName)));
             PreparedStatement preparedReadEntry = session.prepare(SimpleStatement.newInstance(String.format("SELECT created_at, string, number FROM %s WHERE id IN (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)", tableName)));
@@ -82,7 +86,7 @@ public class Operations {
                 // create new entry with random field values using prepared write statement
                 Entry entry = new Entry(RandomStringUtils.randomAlphabetic(10), Math.abs(r.nextInt() % 9999));
                 LOG.debug("Run {}: Inserting new entry {}", i++, entry);
-                runWithRetries(session, preparedWrite.bind(entry.id, Instant.now(), entry.string, entry.number));
+                runWithRetries(session, preparedWrite.bind(entry.id, Instant.now(), entry.string, entry.number), requestCounts);
 
                 // accumulate new entry id and remove oldest if neccessary
                 ids.add(entry.id);
@@ -99,7 +103,7 @@ public class Operations {
                     boundStatementBuilder = boundStatementBuilder.setUuid(pos, ids.get(pos));
                 }
 
-                runWithRetries(session, boundStatementBuilder.build())
+                runWithRetries(session, boundStatementBuilder.build(), requestCounts)
                         .forEach(row -> LOG.debug("Received record ({}, {}, {})", row.getInstant("created_at"), row.getString("string"), row.getInt("number")));
             }
         } finally {
@@ -107,7 +111,7 @@ public class Operations {
                 // if we are using a new table clean it up
                 LOG.debug("Removing table '{}'", tableName);
                 try {
-                    runWithRetries(session, buildDropTableCql(tableName));
+                    runWithRetries(session, buildDropTableCql(tableName), requestCounts);
                 } catch (Exception e) {
                     LOG.error("failed to clean up table", e);
                 }
@@ -117,12 +121,18 @@ public class Operations {
         }
     }
 
-    public static ResultSet runWithRetries(CqlSession session, Statement query) {
+    public static ResultSet runWithRetries(CqlSession session, Statement query, Map<Node, AtomicInteger> requestCounts) {
         // Queries will be retried indefinitely on timeout, they must be idempotent
         // In a real application there should be a limit to the number of retries
         while (true) {
             try {
-                return session.execute(query);
+                ResultSet resultSet = session.execute(query);
+                ExecutionInfo executionInfo = resultSet.getExecutionInfo();
+                Node node = executionInfo.getCoordinator();
+                if (node != null) {
+                    requestCounts.computeIfAbsent(node, n -> new AtomicInteger()).incrementAndGet();
+                }
+                return resultSet;
             } catch (DriverTimeoutException | WriteTimeoutException | ReadTimeoutException | ClosedConnectionException e) {
                 // request timed-out, catch error and retry
                 LOG.warn(String.format("Error '%s' executing query '%s', retrying", e.getMessage(), query), e);
