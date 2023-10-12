@@ -13,12 +13,13 @@
 
   <properties>
     <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
-    <datastax.java-driver.version>4.17.1-SNAPSHOT</datastax.java-driver.version>
+    <datastax.java-driver.version>4.17.0</datastax.java-driver.version>
     <commons-cli.version>1.5.0</commons-cli.version>
     <commons-lang3.version>3.12.0</commons-lang3.version>
     <logback.version>1.2.3</logback.version>
     <single-region.main.class>com.datastax.astra.driver.examples.AstraSingleRegion</single-region.main.class>
     <multi-region.main.class>com.datastax.astra.driver.examples.AstraMultiRegion</multi-region.main.class>
+    <local.main.class>com.datastax.astra.driver.examples.LocalCluster</local.main.class>
   </properties>
 
   <dependencies>
@@ -110,6 +111,19 @@
                   <argument>--astraSecureConnectBundle=${args.astraSecureConnectBundle}</argument>
                   <argument>--fallbackAstraSecureConnectBundle=${args.fallbackAstraSecureConnectBundle}</argument>
                   <argument>--astraToken=${args.astraToken}</argument>
+                  <argument>--keyspace=${args.keyspace}</argument>
+                  <argument>--iterations=${args.iterations}</argument>
+                </arguments>
+              </configuration>
+            </execution>
+            <execution>
+              <id>local</id>
+              <goals>
+                <goal>java</goal>
+              </goals>
+              <configuration>
+                <mainClass>${local.main.class}</mainClass>
+                <arguments>
                   <argument>--keyspace=${args.keyspace}</argument>
                   <argument>--iterations=${args.iterations}</argument>
                 </arguments>

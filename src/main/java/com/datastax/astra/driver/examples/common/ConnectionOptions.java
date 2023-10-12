@@ -15,17 +15,17 @@ public class ConnectionOptions {
             .longOpt("astraSecureConnectBundle")
             .argName("PATH")
             .desc("Path to Astra Secure Connect Bundle for the database you are connecting to. Downloaded from the Astra dashboard.")
-            .hasArg().required().build();
+            .hasArg().build();
     private static Option ASTRA_TOKEN_OPTION = Option.builder()
             .longOpt("astraToken")
             .argName("TOKEN")
             .desc("Token for the specific User/Role who is connecting to the database. Begins with \"AstraCS:...\".")
-            .hasArg().required().build();
+            .hasArg().build();
     private static Option KEYSPACE_OPTION = Option.builder()
             .longOpt("keyspace")
             .argName("KEYSPACE")
             .desc("Keyspace to use with this sample app. Note this may add or modify data already in this keyspace.")
-            .hasArg().required().build();
+            .hasArg().build();
     private static Option FALLBACK_ASTRA_SECURE_CONNECT_BUNDLE_OPTION = Option.builder()
             .longOpt("fallbackAstraSecureConnectBundle")
             .argName("PATH")
@@ -36,7 +36,6 @@ public class ConnectionOptions {
             .argName("N")
             .desc("Number of demo-loop iterations to perform (default=100)")
             .hasArg().build();
-
     private static Options OPTIONS = new Options()
             .addOption(ASTRA_SECURE_CONNECT_BUNDLE_OPTION)
             .addOption(ASTRA_TOKEN_OPTION)

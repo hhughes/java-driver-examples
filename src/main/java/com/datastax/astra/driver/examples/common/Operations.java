@@ -138,7 +138,7 @@ public class Operations {
         while (true) {
             try {
                 return sessionBuilder.withConfigLoader(primaryScbConfig).build();
-            } catch (AllNodesFailedException | IllegalStateException e) {
+            } catch (AllNodesFailedException e) {
                 // session creation failed, probably due to time-out, catch error and retry
                 LOG.warn("Failed to create session.", e);
             }
