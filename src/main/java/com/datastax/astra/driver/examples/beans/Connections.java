@@ -9,6 +9,7 @@ import com.datastax.oss.driver.internal.core.config.cloud.CloudConfigFactory;
 import com.datastax.oss.driver.internal.core.context.InternalDriverContext;
 import com.datastax.oss.driver.internal.core.metadata.NodeInfo;
 import com.datastax.oss.driver.internal.core.metadata.TopologyEvent;
+import com.datastax.oss.protocol.internal.response.event.TopologyChangeEvent;
 import io.netty.channel.Channel;
 import org.apache.commons.lang3.reflect.FieldUtils;
 import org.slf4j.Logger;
@@ -81,6 +82,13 @@ public class Connections implements ConnectionsMXBean {
     @Override
     public void closeControlConnection() {
         getChannel(getContext().getControlConnection().channel()).close();
+    }
+
+    @Override
+    public void simulateTopologyEvent(String changeType, String broadcastRpcAddress) {
+        String host = broadcastRpcAddress.split(":")[0];
+        int port = Integer.parseInt(broadcastRpcAddress.split(":")[1]);
+        getContext().getControlConnection().onEvent(new TopologyChangeEvent(changeType, new InetSocketAddress(host, port)));
     }
 
     @Override
