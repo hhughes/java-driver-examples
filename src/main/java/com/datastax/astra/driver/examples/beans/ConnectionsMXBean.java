@@ -7,6 +7,7 @@ public interface ConnectionsMXBean {
     // List<ChannelEventNotification> getChannelEvents();
     // List<NodeStateEventNotification> getNodeStateEvents();
     void closeControlConnection();
+    void simulateTopologyEvent(String eventType, String broadcastRpcAddress);
     void suggestRemove(String broadcastRpcAddress);
     void suggestAdd(String broadcastRpcAddress);
     void forceDown(String broadcastRpcAddress);
