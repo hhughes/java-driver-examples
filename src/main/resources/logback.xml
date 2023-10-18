@@ -34,7 +34,6 @@
         <appender-ref ref="FILE" />
         <appender-ref ref="STDOUT" />
     </root>
-    <!--
     <logger name="com.datastax.oss.driver.internal.core.control.ControlConnection" level="trace">
         <appender-ref ref="STDOUT-DEBUG" />
     </logger>
@@ -77,26 +76,46 @@
     <logger name="com.datastax.oss.driver.internal.core.loadbalancing.BasicLoadBalancingPolicy" level="trace">
         <appender-ref ref="STDOUT-DEBUG" />
     </logger>
-    <logger name="com.datastax.oss.driver.internal.core.channel.ProtocolInitHandler" level="trace">
+    <logger name="io.netty.handler.ssl.SslHandler" level="trace">
         <appender-ref ref="STDOUT-DEBUG" />
     </logger>
-    <logger name="com.datastax.oss.driver.internal.core.metadata.SniEndPoint" level="trace">
-        <appender-ref ref="STDOUT-DEBUG" />
-    </logger>
-    <logger name="com.datastax.oss.driver.internal.core.tracker.RequestLogger" level="trace">
+    <logger name="com.datastax.astra.driver.examples.common.Operations" level="trace">
         <appender-ref ref="STDOUT-DEBUG" />
     </logger>
     <logger name="com.datastax.oss.driver.internal.core.cql.CqlRequestHandler" level="trace">
         <appender-ref ref="STDOUT-DEBUG" />
     </logger>
-    -->
-    <logger name="com.datastax.oss.driver.internal.core.pool.ChannelPool" level="trace">
+
+    <!--
+    <logger name="com.datastax.oss.driver.internal.core.adminrequest.AdminRequestHandler" level="trace">
         <appender-ref ref="STDOUT-DEBUG" />
     </logger>
-    <logger name="com.datastax.oss.driver.internal.core.channel.ChannelFactory" level="trace">
+
+    <logger name="com.datastax.oss.driver.internal.core.channel.ProtocolInitHandler" level="trace">
+        <appender-ref ref="STDOUT-DEBUG" />
+    </logger>
+    <logger name="com.datastax.oss.driver.internal.core.channel.InFlightHandler" level="trace">
+        <appender-ref ref="STDOUT-DEBUG" />
+    </logger>
+    <logger name="com.datastax.oss.driver.internal.core.channel.HeartbeatHandler" level="trace">
+        <appender-ref ref="STDOUT-DEBUG" />
+    </logger>
+    <logger name="com.datastax.oss.driver.internal.core.protocol.FrameEncoder" level="trace">
+        <appender-ref ref="STDOUT-DEBUG" />
+    </logger>
+    <logger name="com.datastax.oss.driver.internal.core.protocol.FrameDecoder" level="trace">
+        <appender-ref ref="STDOUT-DEBUG" />
+    </logger>
+    <logger name="com.datastax.oss.driver.internal.core.channel.OutboundTrafficMeter" level="trace">
+        <appender-ref ref="STDOUT-DEBUG" />
+    </logger>
+    <logger name="com.datastax.oss.driver.internal.core.channel.InboundTrafficMeter" level="trace">
         <appender-ref ref="STDOUT-DEBUG" />
     </logger>
     <logger name="io.netty.handler.ssl.SslHandler" level="trace">
         <appender-ref ref="STDOUT-DEBUG" />
     </logger>
+    <logger name="io.netty.channel.DefaultChannelPipeline" level="trace">
+        <appender-ref ref="STDOUT-DEBUG" />
+    </logger>-->
 </configuration>
