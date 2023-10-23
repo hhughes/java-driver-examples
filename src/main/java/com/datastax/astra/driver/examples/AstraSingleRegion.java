@@ -7,6 +7,9 @@ import com.datastax.oss.driver.api.core.CqlSession;
 import com.datastax.oss.driver.api.core.CqlSessionBuilder;
 import com.datastax.oss.driver.api.core.config.DriverConfigLoader;
 import com.datastax.oss.driver.api.core.metadata.Node;
+import io.micrometer.core.instrument.Clock;
+import io.micrometer.jmx.JmxConfig;
+import io.micrometer.jmx.JmxMeterRegistry;
 import com.datastax.oss.driver.shaded.guava.common.base.Strings;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -46,6 +49,7 @@ public class AstraSingleRegion {
         DriverConfigLoader config = DriverConfigLoader.fromClasspath("astra.conf");
         CqlSessionBuilder sessionBuilder = CqlSession.builder()
                 .withCloudSecureConnectBundle(Paths.get(options.getAstraSecureConnectBundle()))
+                .withMetricRegistry(new JmxMeterRegistry(JmxConfig.DEFAULT, Clock.SYSTEM))
                 .withAuthCredentials(username, password)
                 .withKeyspace(keyspace);
 
