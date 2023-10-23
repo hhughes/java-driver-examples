@@ -7,6 +7,9 @@ import com.datastax.oss.driver.api.core.CqlSession;
 import com.datastax.oss.driver.api.core.CqlSessionBuilder;
 import com.datastax.oss.driver.api.core.config.DriverConfigLoader;
 import com.datastax.oss.driver.api.core.metadata.Node;
+import io.micrometer.core.instrument.Clock;
+import io.micrometer.jmx.JmxConfig;
+import io.micrometer.jmx.JmxMeterRegistry;
 import com.datastax.oss.driver.shaded.guava.common.base.Strings;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -47,6 +50,7 @@ public class AstraSingleRegion {
         CqlSessionBuilder sessionBuilder = CqlSession.builder()
                 .withCloudSecureConnectBundle(Paths.get(options.getAstraSecureConnectBundle()))
                 .withAuthCredentials(username, password)
+                .withMetricRegistry(new JmxMeterRegistry(JmxConfig.DEFAULT, Clock.SYSTEM))
                 .withKeyspace(keyspace);
 
         LOG.debug("Creating connection using '{}'", options.getAstraSecureConnectBundle());
