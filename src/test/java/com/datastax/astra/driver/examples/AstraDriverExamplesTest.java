@@ -24,6 +24,6 @@ public class AstraDriverExamplesTest {
         String keyspace = assumeProperty("args.keyspace");
         String iterations = Optional.ofNullable(System.getProperty("args.iterations")).orElse("100");
 
-        AstraSingleRegion.run(new ConnectionOptions(astraSecureConnectBundle, astraToken, keyspace, null, iterations));
+        AstraSingleRegion.run(new ConnectionOptions(astraSecureConnectBundle, astraToken, null, null, keyspace, null, iterations));
     }
 }

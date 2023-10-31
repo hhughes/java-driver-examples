@@ -5,6 +5,7 @@ import com.datastax.astra.driver.examples.common.Operations;
 import com.datastax.oss.driver.api.core.CqlSession;
 import com.datastax.oss.driver.api.core.CqlSessionBuilder;
 import com.datastax.oss.driver.api.core.config.DriverConfigLoader;
+import com.datastax.oss.driver.shaded.guava.common.base.Strings;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -26,10 +27,13 @@ public class AstraSingleRegion {
     public static void run(ConnectionOptions options) {
         final String keyspace = options.getKeyspace();
 
+        final String username = Strings.isNullOrEmpty(options.getAstraToken()) ? options.getClientId() : "token";
+        final String password = Strings.isNullOrEmpty(options.getAstraToken()) ? options.getSecret() : options.getAstraToken();
+
         DriverConfigLoader config = DriverConfigLoader.fromClasspath("astra.conf");
         CqlSessionBuilder sessionBuilder = CqlSession.builder()
                 .withCloudSecureConnectBundle(Paths.get(options.getAstraSecureConnectBundle()))
-                .withAuthCredentials("token", options.getAstraToken())
+                .withAuthCredentials(username, password)
                 .withKeyspace(keyspace);
 
         LOG.debug("Creating connection using '{}'", options.getAstraSecureConnectBundle());

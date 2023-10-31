@@ -21,6 +21,16 @@ public class ConnectionOptions {
             .argName("TOKEN")
             .desc("Token for the specific User/Role who is connecting to the database. Begins with \"AstraCS:...\".")
             .hasArg().build();
+    private static Option CLIENT_ID_OPTION = Option.builder()
+            .longOpt("clientId")
+            .argName("CLIENT_ID")
+            .desc("ClientId for the specific User/Role who is connecting to the database.")
+            .hasArg().build();
+    private static Option SECRET_OPTION = Option.builder()
+            .longOpt("secret")
+            .argName("SECRET")
+            .desc("Secret for the specific User/Role who is connecting to the database.")
+            .hasArg().build();
     private static Option KEYSPACE_OPTION = Option.builder()
             .longOpt("keyspace")
             .argName("KEYSPACE")
@@ -39,6 +49,8 @@ public class ConnectionOptions {
     private static Options OPTIONS = new Options()
             .addOption(ASTRA_SECURE_CONNECT_BUNDLE_OPTION)
             .addOption(ASTRA_TOKEN_OPTION)
+            .addOption(CLIENT_ID_OPTION)
+            .addOption(SECRET_OPTION)
             .addOption(KEYSPACE_OPTION)
             .addOption(FALLBACK_ASTRA_SECURE_CONNECT_BUNDLE_OPTION)
             .addOption(ITERATIONS_OPTION);
@@ -56,6 +68,8 @@ public class ConnectionOptions {
         return Optional.of(new ConnectionOptions(
                 commandLine.getOptionValue(ASTRA_SECURE_CONNECT_BUNDLE_OPTION),
                 commandLine.getOptionValue(ASTRA_TOKEN_OPTION),
+                commandLine.getOptionValue(CLIENT_ID_OPTION),
+                commandLine.getOptionValue(SECRET_OPTION),
                 commandLine.getOptionValue(KEYSPACE_OPTION),
                 commandLine.getOptionValue(FALLBACK_ASTRA_SECURE_CONNECT_BUNDLE_OPTION),
                 commandLine.getOptionValue(ITERATIONS_OPTION)));
@@ -63,13 +77,23 @@ public class ConnectionOptions {
 
     private final String astraSecureConnectBundle;
     private final String astraToken;
+    private final String clientId;
+    private final String secret;
     private final String keyspace;
     private final String fallbackAstraSecureConnectBundle;
     private final long iterations;
 
-    public ConnectionOptions(final String astraSecureConnectBundle, final String astraToken, final String keyspace, String fallbackAstraSecureConnectBundle, String iterations) {
+    public ConnectionOptions(final String astraSecureConnectBundle,
+                             final String astraToken,
+                             final String clientId,
+                             final String secret,
+                             final String keyspace,
+                             final String fallbackAstraSecureConnectBundle,
+                             final String iterations) {
         this.astraSecureConnectBundle = astraSecureConnectBundle;
         this.astraToken = astraToken;
+        this.clientId = clientId;
+        this.secret = secret;
         this.keyspace = keyspace;
         this.fallbackAstraSecureConnectBundle = fallbackAstraSecureConnectBundle;
         this.iterations = iterations != null && !iterations.isEmpty() ? Long.parseLong(iterations) : 100L;
@@ -78,8 +102,17 @@ public class ConnectionOptions {
     public String getAstraSecureConnectBundle() {
         return this.astraSecureConnectBundle;
     }
+
     public String getAstraToken() {
         return this.astraToken;
+    }
+
+    public String getClientId() {
+        return this.clientId;
+    }
+
+    public String getSecret() {
+        return this.secret;
     }
 
     public boolean hasKeyspace() {
