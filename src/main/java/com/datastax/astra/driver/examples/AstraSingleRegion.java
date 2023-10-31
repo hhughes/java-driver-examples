@@ -5,6 +5,7 @@ import com.datastax.astra.driver.examples.common.Operations;
 import com.datastax.oss.driver.api.core.CqlSession;
 import com.datastax.oss.driver.api.core.CqlSessionBuilder;
 import com.datastax.oss.driver.api.core.config.DriverConfigLoader;
+import com.datastax.oss.driver.api.core.config.TypedDriverOption;
 import com.datastax.oss.driver.shaded.guava.common.base.Strings;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -20,6 +21,7 @@ public class AstraSingleRegion {
 
     // Entry point, parse args and call run
     public static void main(String[] args) {
+        Thread.currentThread().setName("main()");
         ConnectionOptions.fromArgs(AstraSingleRegion.class, args).ifPresent(AstraSingleRegion::run);
     }
 
@@ -30,10 +32,13 @@ public class AstraSingleRegion {
         final String username = Strings.isNullOrEmpty(options.getAstraToken()) ? options.getClientId() : "token";
         final String password = Strings.isNullOrEmpty(options.getAstraToken()) ? options.getSecret() : options.getAstraToken();
 
+        final Operations.OperationRequestTracker tracker = new Operations.OperationRequestTracker();
+
         DriverConfigLoader config = DriverConfigLoader.fromClasspath("astra.conf");
         CqlSessionBuilder sessionBuilder = CqlSession.builder()
                 .withCloudSecureConnectBundle(Paths.get(options.getAstraSecureConnectBundle()))
                 .withAuthCredentials(username, password)
+                .withRequestTracker(tracker)
                 .withKeyspace(keyspace);
 
         LOG.debug("Creating connection using '{}'", options.getAstraSecureConnectBundle());
@@ -42,7 +47,7 @@ public class AstraSingleRegion {
             if (options.getIterations() == 0) {
                 return;
             }
-            Operations.runDemo(cqlSession, options.getIterations());
+            Operations.runDemo(cqlSession, options.getIterations(), tracker);
         }
     }
 }

@@ -12,11 +12,11 @@ import com.datastax.oss.driver.api.core.metrics.Metrics;
 import com.datastax.oss.driver.api.core.session.Request;
 import com.datastax.oss.driver.api.core.type.reflect.GenericType;
 import com.datastax.oss.driver.internal.core.util.concurrent.CompletableFutures;
-import edu.umd.cs.findbugs.annotations.NonNull;
-import edu.umd.cs.findbugs.annotations.Nullable;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import javax.annotation.Nonnull;
+import javax.annotation.Nullable;
 import java.nio.file.Paths;
 import java.util.Optional;
 import java.util.concurrent.CompletableFuture;
@@ -56,7 +56,7 @@ public class AstraMultiRegion {
                 throw new RuntimeException("no session connected");
             }
             // TODO: handle region-fallback after initial connection
-            Operations.runDemo(cqlSession, options.getIterations());
+            Operations.runDemo(cqlSession, options.getIterations(), new Operations.OperationRequestTracker());
         }
     }
 
@@ -100,13 +100,13 @@ public class AstraMultiRegion {
 
         CompletionStage<Void> closeFuture;
 
-        @NonNull
+        @Nonnull
         @Override
         public CompletionStage<Void> closeFuture() {
             return closeFuture;
         }
 
-        @NonNull
+        @Nonnull
         @Override
         public CompletionStage<Void> closeAsync() {
             closeFuture = CompletableFuture.completedFuture(null);
@@ -119,19 +119,19 @@ public class AstraMultiRegion {
             return closeFuture;
         }
 
-        @NonNull
+        @Nonnull
         @Override
         public CompletionStage<Void> forceCloseAsync() {
             return closeAsync();
         }
 
-        @NonNull
+        @Nonnull
         @Override
         public String getName() {
             return "PrimarySessionWithFallback";
         }
 
-        @NonNull
+        @Nonnull
         @Override
         public Metadata getMetadata() {
             return get().getMetadata();
@@ -142,45 +142,45 @@ public class AstraMultiRegion {
             return get().isSchemaMetadataEnabled();
         }
 
-        @NonNull
+        @Nonnull
         @Override
         public CompletionStage<Metadata> setSchemaMetadataEnabled(@Nullable Boolean newValue) {
             return get().setSchemaMetadataEnabled(newValue);
         }
 
-        @NonNull
+        @Nonnull
         @Override
         public CompletionStage<Metadata> refreshSchemaAsync() {
             return get().refreshSchemaAsync();
         }
 
-        @NonNull
+        @Nonnull
         @Override
         public CompletionStage<Boolean> checkSchemaAgreementAsync() {
             return get().checkSchemaAgreementAsync();
         }
 
-        @NonNull
+        @Nonnull
         @Override
         public DriverContext getContext() {
             return get().getContext();
         }
 
-        @NonNull
+        @Nonnull
         @Override
         public Optional<CqlIdentifier> getKeyspace() {
             return get().getKeyspace();
         }
 
-        @NonNull
+        @Nonnull
         @Override
         public Optional<Metrics> getMetrics() {
             return get().getMetrics();
         }
 
-        @Nullable
+        @Nonnull
         @Override
-        public <RequestT extends Request, ResultT> ResultT execute(@NonNull RequestT request, @NonNull GenericType<ResultT> resultType) {
+        public <RequestT extends Request, ResultT> ResultT execute(@Nonnull RequestT request, @Nonnull GenericType<ResultT> resultType) {
             return get().execute(request, resultType);
         }
     }
