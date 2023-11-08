@@ -1,5 +1,6 @@
 package com.datastax.astra.driver.examples.common;
 
+import com.datastax.astra.driver.examples.beans.Connections;
 import com.datastax.oss.driver.api.core.AllNodesFailedException;
 import com.datastax.oss.driver.api.core.CqlSession;
 import com.datastax.oss.driver.api.core.CqlSessionBuilder;
@@ -15,17 +16,27 @@ import com.datastax.oss.driver.api.core.cql.SimpleStatement;
 import com.datastax.oss.driver.api.core.cql.Statement;
 import com.datastax.oss.driver.api.core.metadata.Node;
 import com.datastax.oss.driver.api.core.servererrors.ReadTimeoutException;
+import com.datastax.oss.driver.api.core.servererrors.UnavailableException;
 import com.datastax.oss.driver.api.core.servererrors.WriteTimeoutException;
 import org.apache.commons.lang3.RandomStringUtils;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import javax.management.InstanceAlreadyExistsException;
+import javax.management.MBeanRegistrationException;
+import javax.management.MBeanServer;
+import javax.management.MalformedObjectNameException;
+import javax.management.NotCompliantMBeanException;
+import javax.management.ObjectName;
+import java.lang.management.ManagementFactory;
 import java.nio.file.Paths;
 import java.time.Instant;
+import java.util.Collections;
 import java.util.LinkedList;
 import java.util.Map;
 import java.util.Random;
 import java.util.UUID;
+import java.util.WeakHashMap;
 import java.util.concurrent.atomic.AtomicInteger;
 
 public class Operations {
@@ -63,7 +74,19 @@ public class Operations {
         }
     }
 
-    public static void runDemo(CqlSession session, long iterations, Map<Node, AtomicInteger> requestCounts) {
+    public static void runDemo(CqlSession session, long iterations) {
+
+        // init jmxbeans
+        Map<Node, AtomicInteger> requestCounts = Collections.synchronizedMap(new WeakHashMap<>());
+        try {
+            ObjectName objectName = new ObjectName("com.datastax.astra.driver.examples:type=basic,name=sessions");
+            MBeanServer server = ManagementFactory.getPlatformMBeanServer();
+            server.registerMBean(new Connections(session, requestCounts, ""), objectName);
+        } catch (MalformedObjectNameException | InstanceAlreadyExistsException | MBeanRegistrationException |
+                 NotCompliantMBeanException e) {
+            throw new RuntimeException(e);
+        }
+
         LOG.debug("Running demo with {} iterations", iterations);
 
         // Create new table to hold demo data (exit if it does)
@@ -140,6 +163,8 @@ public class Operations {
                 LOG.warn(String.format("Error '%s' executing query '%s', retrying", e.getMessage(), query), e);
             } catch (AllNodesFailedException e) {
                 LOG.error(String.format("AllNodesFailedException error '%s' executing query '%s', retrying", e.getMessage(), query), e);
+            } catch (UnavailableException e) {
+                LOG.error(String.format("UnavailableException error '%s' executing query '%s', retrying", e.getMessage(), query), e);
             }
         }
     }

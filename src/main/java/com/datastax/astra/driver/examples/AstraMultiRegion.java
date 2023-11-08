@@ -21,7 +21,6 @@ import java.nio.file.Paths;
 import java.util.Optional;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.CompletionStage;
-import java.util.concurrent.ConcurrentHashMap;
 
 public class AstraMultiRegion {
 
@@ -57,7 +56,7 @@ public class AstraMultiRegion {
                 throw new RuntimeException("no session connected");
             }
             // TODO: handle region-fallback after initial connection
-            Operations.runDemo(cqlSession, options.getIterations(), new ConcurrentHashMap<>());
+            Operations.runDemo(cqlSession, options.getIterations());
         }
     }
 
