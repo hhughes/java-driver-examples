@@ -8,6 +8,7 @@ import com.datastax.oss.driver.api.core.config.DriverConfigLoader;
 import com.datastax.oss.driver.api.core.config.DriverExecutionProfile;
 import com.datastax.oss.driver.api.core.connection.ClosedConnectionException;
 import com.datastax.oss.driver.api.core.cql.AsyncResultSet;
+import com.datastax.oss.driver.api.core.cql.PrepareRequest;
 import com.datastax.oss.driver.api.core.cql.PreparedStatement;
 import com.datastax.oss.driver.api.core.cql.SimpleStatement;
 import com.datastax.oss.driver.api.core.cql.Statement;
@@ -16,6 +17,7 @@ import com.datastax.oss.driver.api.core.servererrors.ReadTimeoutException;
 import com.datastax.oss.driver.api.core.servererrors.WriteTimeoutException;
 import com.datastax.oss.driver.api.core.session.Request;
 import com.datastax.oss.driver.api.core.tracker.RequestTracker;
+import com.datastax.oss.driver.internal.core.cql.DefaultPrepareRequest;
 import com.datastax.oss.driver.shaded.guava.common.util.concurrent.Uninterruptibles;
 import org.apache.commons.lang3.RandomStringUtils;
 import org.slf4j.Logger;
@@ -32,8 +34,11 @@ import java.util.Queue;
 import java.util.Random;
 import java.util.Set;
 import java.util.UUID;
+import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.CompletionStage;
 import java.util.concurrent.ConcurrentLinkedQueue;
+import java.util.concurrent.ExecutorService;
+import java.util.concurrent.Executors;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicLong;
 import java.util.stream.IntStream;
@@ -92,11 +97,11 @@ public class Operations {
             PreparedStatement preparedRead = session.prepare(SimpleStatement.newInstance(String.format("SELECT created_at, string, number FROM %s WHERE id = ?", tableName)));
 
             for (int experiment=0; experiment<3; experiment++) {
-                LOG.info("Preparing round {}", experiment);
                 List<String> strings = IntStream.range(0, 200).mapToObj(i -> RandomStringUtils.randomAlphanumeric(10000)).collect(java.util.stream.Collectors.toList());
                 LOG.info("Starting round {}", experiment);
                 Queue<CompletionStage<Void>> operations = new ConcurrentLinkedQueue<>();
                 long beginEnqueue = System.nanoTime();
+                ExecutorService pool = Executors.newFixedThreadPool(50);
                 LongStream.range(0, iterations).forEach(i -> {
                     drainOperations(operations, 2000);
 
@@ -105,9 +110,11 @@ public class Operations {
                     LOG.debug("Run {}: Inserting new entry {}", i, entry);
                     CompletionStage<AsyncResultSet> writeResults = runWithRetries(session, preparedWrite.bind(entry.id, Instant.now(), entry.string, entry.number));
 
-                    CompletionStage<AsyncResultSet> readResults = writeResults.thenComposeAsync(rs -> runWithRetries(session, preparedRead.bind(entry.id)));
+                    CompletionStage<AsyncResultSet> readResults = writeResults.thenComposeAsync(rs -> runWithRetries(session, preparedRead.bind(entry.id)), pool);
 
-                    CompletionStage<Void> result = readResults.thenAccept(rs -> rs.currentPage().forEach(row -> LOG.debug("Received record ({}, {}, {})", row.getInstant("created_at"), trim(row.getString("string")), row.getInt("number"))));
+                    CompletionStage<Void> result = readResults.thenAcceptAsync(rs -> {
+                        rs.currentPage().forEach(row -> LOG.debug("Received record ({}, {}, {})", row.getInstant("created_at"), trim(row.getString("string")), row.getInt("number")));
+                    }, pool);
                     operations.add(result);
                 });
 
@@ -118,7 +125,6 @@ public class Operations {
                 LOG.info("[{}] Processed {} queries in {} millis (p50/p90/p99: {}/{}/{} millis / {} failed)", experiment, iterations, TimeUnit.NANOSECONDS.toMillis(end - beginEnqueue), TimeUnit.NANOSECONDS.toMillis(percentiles[0]), TimeUnit.NANOSECONDS.toMillis(percentiles[1]), TimeUnit.NANOSECONDS.toMillis(percentiles[2]), tracker.errorCount.get());
 
                 tracker.reset();
-                Uninterruptibles.sleepUninterruptibly(30, TimeUnit.SECONDS);
             }
         } finally {
             if (USE_NEW_TABLE) {
@@ -228,9 +234,12 @@ public class Operations {
         }
 
         private long[] percentiles(long ... p) {
+            if (timings.isEmpty()) {
+                return new long[p.length];
+            }
             List<Long> snapshot = new ArrayList<>(timings);
             snapshot.sort(Long::compareTo);
-            return LongStream.of(p).map(pct -> snapshot.get((int) Math.ceil((pct / 100.0) * snapshot.size()) - 1)).toArray();
+            return LongStream.of(p).map(pct -> snapshot.get((int) Math.ceil((pct / 100.0) * (snapshot.size()-1)))).toArray();
         }
     }
 }

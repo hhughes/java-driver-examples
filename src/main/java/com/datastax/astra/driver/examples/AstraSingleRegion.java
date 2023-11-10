@@ -23,6 +23,7 @@ public class AstraSingleRegion {
     public static void main(String[] args) {
         Thread.currentThread().setName("main()");
         ConnectionOptions.fromArgs(AstraSingleRegion.class, args).ifPresent(AstraSingleRegion::run);
+        System.exit(0);
     }
 
     // Populate AstraDB using the provided connection options
