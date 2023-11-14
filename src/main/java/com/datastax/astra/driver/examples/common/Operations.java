@@ -6,13 +6,15 @@ import com.datastax.oss.driver.api.core.CqlSessionBuilder;
 import com.datastax.oss.driver.api.core.DriverTimeoutException;
 import com.datastax.oss.driver.api.core.config.DriverConfigLoader;
 import com.datastax.oss.driver.api.core.connection.ClosedConnectionException;
-import com.datastax.oss.driver.api.core.cql.BoundStatementBuilder;
+import com.datastax.oss.driver.api.core.cql.BoundStatement;
 import com.datastax.oss.driver.api.core.cql.PreparedStatement;
 import com.datastax.oss.driver.api.core.cql.ResultSet;
 import com.datastax.oss.driver.api.core.cql.SimpleStatement;
 import com.datastax.oss.driver.api.core.cql.Statement;
 import com.datastax.oss.driver.api.core.servererrors.ReadTimeoutException;
 import com.datastax.oss.driver.api.core.servererrors.WriteTimeoutException;
+import com.datastax.oss.driver.internal.core.cql.DefaultPrepareRequest;
+import com.datastax.oss.driver.internal.core.util.concurrent.CompletableFutures;
 import org.apache.commons.lang3.RandomStringUtils;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -22,6 +24,7 @@ import java.time.Instant;
 import java.util.LinkedList;
 import java.util.Random;
 import java.util.UUID;
+import java.util.concurrent.CompletionStage;
 
 public class Operations {
     private static final boolean USE_NEW_TABLE = false;
@@ -71,10 +74,13 @@ public class Operations {
             LOG.debug("Creating table '{}'", tableName);
             runWithRetries(session, buildCreateTableCql(tableName));
 
-            PreparedStatement preparedWrite = session.prepare(SimpleStatement.newInstance(String.format("INSERT INTO %s (id, created_at, string, number) VALUES (?, ?, ?, ?)", tableName)));
-            PreparedStatement preparedReadEntry = session.prepare(SimpleStatement.newInstance(String.format("SELECT created_at, string, number FROM %s WHERE id IN (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)", tableName)));
-
             LinkedList<UUID> ids = new LinkedList<>();
+
+            DefaultPrepareRequest writePrepareRequest = new DefaultPrepareRequest(SimpleStatement.newInstance(String.format("INSERT INTO %s (id, created_at, string, number) VALUES (?, ?, ?, ?)", tableName)));
+            DefaultPrepareRequest readPrepareRequest = new DefaultPrepareRequest(SimpleStatement.newInstance(String.format("SELECT created_at, string, number FROM %s WHERE id IN ?", tableName)));
+
+            CompletionStage<PreparedStatement> preparedWrite = session.prepareAsync(writePrepareRequest);
+            CompletionStage<PreparedStatement> preparedRead = session.prepareAsync(readPrepareRequest);
 
             int i=0;
             // intentional !=  check so that setting iterations < 0 will loop forever
@@ -82,25 +88,20 @@ public class Operations {
                 // create new entry with random field values using prepared write statement
                 Entry entry = new Entry(RandomStringUtils.randomAlphabetic(10), Math.abs(r.nextInt() % 9999));
                 LOG.debug("Run {}: Inserting new entry {}", i++, entry);
-                runWithRetries(session, preparedWrite.bind(entry.id, Instant.now(), entry.string, entry.number));
+                runWithRetries(session, CompletableFutures.getUninterruptibly(preparedWrite).bind(entry.id, Instant.now(), entry.string, entry.number));
 
                 // accumulate new entry id and remove oldest if neccessary
                 ids.add(entry.id);
                 if (ids.size() > 10) {
                     ids.removeFirst();
-                } else {
-                    // cannot use prepare query until we have 10 items available
-                    continue;
                 }
 
-                // read rows fetched using prepared read statement
-                BoundStatementBuilder boundStatementBuilder = preparedReadEntry.boundStatementBuilder();
-                for (int pos=0; pos<ids.size(); pos++) {
-                    boundStatementBuilder = boundStatementBuilder.setUuid(pos, ids.get(pos));
-                }
+                BoundStatement bs = CompletableFutures.getUninterruptibly(preparedRead).bind(ids);
 
-                runWithRetries(session, boundStatementBuilder.build())
+                runWithRetries(session, bs)
                         .forEach(row -> LOG.debug("Received record ({}, {}, {})", row.getInstant("created_at"), row.getString("string"), row.getInt("number")));
+
+                System.gc();
             }
         } finally {
             if (USE_NEW_TABLE) {
