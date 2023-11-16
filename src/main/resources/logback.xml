@@ -83,6 +83,7 @@
     <logger name="com.datastax.oss.driver.internal.core.metadata.SniEndPoint" level="trace">
         <appender-ref ref="STDOUT-DEBUG" />
     </logger>
+    <!--
     <logger name="com.datastax.oss.driver.internal.core.tracker.RequestLogger" level="trace">
         <appender-ref ref="STDOUT-DEBUG" />
     </logger>
@@ -98,4 +99,5 @@
     <logger name="io.netty.handler.ssl.SslHandler" level="trace">
         <appender-ref ref="STDOUT-DEBUG" />
     </logger>
+    -->
 </configuration>

@@ -108,7 +108,7 @@ public class Operations {
             // intentional !=  check so that setting iterations < 0 will loop forever
             while (i != iterations) {
                 // create new entry with random field values using prepared write statement
-                Entry entry = new Entry(RandomStringUtils.randomAlphabetic(10), Math.abs(r.nextInt() % 9999));
+                Entry entry = new Entry(RandomStringUtils.randomAlphabetic((int) Math.pow(10, r.nextInt(6))), Math.abs(r.nextInt() % 9999));
                 LOG.debug("Run {}: Inserting new entry {}", i++, entry);
                 runWithRetries(session, preparedWrite.bind(entry.id, Instant.now(), entry.string, entry.number), requestCounts);
 
