@@ -78,7 +78,7 @@ public class Operations {
             runWithRetries(session, buildCreateTableCql(tableName));
 
             PreparedStatement preparedWrite = session.prepare(SimpleStatement.newInstance(String.format("INSERT INTO %s (id, created_at, string, number) VALUES (?, ?, ?, ?)", tableName)));
-            PreparedStatement preparedReadEntry = session.prepare(SimpleStatement.newInstance(String.format("SELECT created_at, string, number FROM %s WHERE id IN (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)", tableName)));
+            PreparedStatement preparedRead = session.prepare(SimpleStatement.newInstance(String.format("SELECT created_at, string, number FROM %s WHERE id IN ?", tableName)));
 
             LinkedList<UUID> ids = new LinkedList<>();
 
@@ -94,18 +94,9 @@ public class Operations {
                 ids.add(entry.id);
                 if (ids.size() > 10) {
                     ids.removeFirst();
-                } else {
-                    // cannot use prepare query until we have 10 items available
-                    continue;
                 }
 
-                // read rows fetched using prepared read statement
-                BoundStatementBuilder boundStatementBuilder = preparedReadEntry.boundStatementBuilder();
-                for (int pos=0; pos<ids.size(); pos++) {
-                    boundStatementBuilder = boundStatementBuilder.setUuid(pos, ids.get(pos));
-                }
-
-                runWithRetries(session, boundStatementBuilder.build())
+                runWithRetries(session, preparedRead.bind(ids))
                         .forEach(row -> LOG.debug("Received record ({}, {}, {})", row.getInstant("created_at"), row.getString("string"), row.getInt("number")));
             }
         } finally {

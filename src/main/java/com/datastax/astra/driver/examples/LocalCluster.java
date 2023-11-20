@@ -11,7 +11,9 @@ import java.net.InetSocketAddress;
 public class LocalCluster {
 
     public static void main(String[] args) {
+        Thread.currentThread().setName("main");
         ConnectionOptions.fromArgs(Operations.class, args).ifPresent(LocalCluster::run);
+        System.exit(0);
     }
 
     public static void run(ConnectionOptions options) {
