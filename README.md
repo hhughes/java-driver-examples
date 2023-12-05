@@ -22,3 +22,5 @@ Simulate slow connections:
 > Additional requirement: `docker`
 
     ./test-slow-link.sh "/path/to/secure-connect-astra.zip" "AstraCS:.." "<keyspace>"
+
+Note: AstraMultiRegion.java is an incomplete work-in-progress, please do not try to use this code directly.
